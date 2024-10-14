@@ -1,6 +1,6 @@
 <?php
-//MySQL Connection Information
-$servername = "localhost";
-$username = "root";
-$password = "123456";
-$dbname = "auction";
+$Sys_config["debug"] = true;
+$Sys_config["db_host"] = "localhost";
+$Sys_config["db_user"] = "root";
+$Sys_config["db_password"] = "123456";
+$Sys_config["db_database"] = "auction";

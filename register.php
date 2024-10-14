@@ -1,58 +1,70 @@
-<?php include_once("header.php") ?>
-
-    <div class="container">
-        <h2 class="my-3">Register new account</h2>
-
-        <!-- Create auction form -->
-        <form method="POST" action="process_registration.php">
-            <div class="form-group row">
-                <label for="accountType" class="col-sm-2 col-form-label text-right">Registering as a:</label>
-                <div class="col-sm-10">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="accountType" id="accountBuyer" value="buyer"
-                               checked>
-                        <label class="form-check-label" for="accountBuyer">Buyer</label>
+<?php include_once("header.php")
+//TODO: Identity? Seller or Buyer
+?>
+    <body class=" d-flex flex-column">
+    <div class="page page-center">
+        <div class="container container-tight py-4">
+            <div class="card card-md">
+                <div class="card-body">
+                    <h2 class="h2 text-center mb-4">Register</h2>
+                    <div class="mb-3">
+                        <label class="form-label"><i class="fas fa-envelope"></i> Email</label>
+                        <input class="form-control" id="email" placeholder="Please enter your email address" required
+                               type="email">
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="accountType" id="accountSeller"
-                               value="seller">
-                        <label class="form-check-label" for="accountSeller">Seller</label>
+                    <div class="mb-2">
+                        <label class="form-label"><i class="fa-solid fa-lock"></i> Password</label>
+                        <div class="input-group input-group-flat">
+                            <input class="form-control" id="password" placeholder="Please enter the password"
+                                   required
+                                   type="password">
+                        </div>
                     </div>
-                    <small id="accountTypeHelp" class="form-text-inline text-muted"><span class="text-danger">* Required.</span></small>
+                    <div class="mb-2">
+                        <label class="form-label">
+                            Repeat password
+                        </label>
+                        <div class="input-group input-group-flat">
+                            <input class="form-control" id="confirm_password"
+                                   placeholder="Please repeat the password" required ype="password">
+                        </div>
+                    </div>
+                    <div class="form-footer">
+                        <button class="btn btn-primary w-100"
+                                hx-post="/auth/register"
+                                hx-swap="none"
+                                hx-disabled-elt="button"
+                                hx-vals='js:{
+                                email: document.getElementById("email").value,
+                                password: document.getElementById("password").value,
+                                confirm_password: document.getElementById("confirm_password").value,
+                            }'>
+                            Register
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="form-group row">
-                <label for="email" class="col-sm-2 col-form-label text-right">Email</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="email" placeholder="Email">
-                    <small id="emailHelp" class="form-text text-muted"><span
-                                class="text-danger">* Required.</span></small>
-                </div>
+            <div class="text-center text-muted mt-3">
+                Already registered? <a href="login.php" tabindex="-1">Login</a>
             </div>
-            <div class="form-group row">
-                <label for="password" class="col-sm-2 col-form-label text-right">Password</label>
-                <div class="col-sm-10">
-                    <input type="password" class="form-control" id="password" placeholder="Password">
-                    <small id="passwordHelp" class="form-text text-muted"><span
-                                class="text-danger">* Required.</span></small>
-                </div>
-            </div>
-            <div class="form-group row">
-                <label for="passwordConfirmation" class="col-sm-2 col-form-label text-right">Repeat password</label>
-                <div class="col-sm-10">
-                    <input type="password" class="form-control" id="passwordConfirmation"
-                           placeholder="Enter password again">
-                    <small id="passwordConfirmationHelp" class="form-text text-muted"><span class="text-danger">* Required.</span></small>
-                </div>
-            </div>
-            <div class="form-group row">
-                <button type="submit" class="btn btn-primary form-control">Register</button>
-            </div>
-        </form>
-
-        <div class="text-center">Already have an account? <a href="" data-toggle="modal"
-                                                             data-target="#loginModal">Login</a>
-
         </div>
+    </div>
+    </body>
+    <script>
+        var passwordInput = $('input[id="password"]');
+        var confirmPasswordInput = $('input[id="confirm_password"]');
+        passwordInput.on('input', checkPasswordMatch);
+        confirmPasswordInput.on('input', checkPasswordMatch);
 
+        function checkPasswordMatch() {
+            var password = passwordInput.val();
+            var confirmPassword = confirmPasswordInput.val();
+
+            if (password === confirmPassword && confirmPassword !== '') {
+                confirmPasswordInput.removeClass('is-invalid').addClass('is-valid');
+            } else {
+                confirmPasswordInput.removeClass('is-valid').addClass('is-invalid');
+            }
+        }
+    </script>
 <?php include_once("footer.php") ?>
