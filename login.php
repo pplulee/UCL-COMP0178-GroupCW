@@ -1,4 +1,23 @@
-<?php include_once("header.php") ?>
+<?php
+switch ($_SERVER['REQUEST_METHOD']) {
+    case 'POST':
+        include "include/common.php";
+        header('Content-Type: application/json');
+        $user = new User();
+        $result = $user->login($_POST);
+        if ($result['ret'] === 1) {
+            header('HX-Redirect: index.php');
+        }
+        echo json_encode($result);
+        exit();
+    case 'GET':
+        include_once("header.php");
+        break;
+    default:
+        http_response_code(405);
+        exit();
+}
+?>
     <body class="d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">

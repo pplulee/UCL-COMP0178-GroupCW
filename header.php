@@ -1,5 +1,10 @@
 <?php
-include "include/common.php";
+include_once "include/common.php";
+//TODO - Cookie Login
+if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "login.php", "register.php")))) {
+    echo "<script>window.location.href='login.php';</script>"; // Redirect to login page
+    exit;
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -44,7 +49,7 @@ include "include/common.php";
         // Displays either login or logout on the right, depending on user's
         // current status (session).
         if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-            echo '<a class="btn btn-danger order-md-last" href="logout.php">Login</a>';
+            echo '<button class="btn btn-danger order-md-last" hx-post="logout.php" hx-trigger="click" hx-swap="none">Logout</button>';
         } else {
             echo '<a class="btn btn-primary order-md-last" href="login.php">Login</a>';
         }

@@ -1,14 +1,16 @@
 <?php
+
+use voku\helper\AntiXSS;
+
 header('Content-Type: text/html; charset=UTF-8');
 include $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 include $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 include("function.php");
 include("User.php");
-global $Sys_config;
 
 
 //Enable error reporting
-if ($Sys_config["debug"]) {
+if (env("debug", false)) {
     ini_set("display_errors", "On");
     error_reporting(E_ALL);
 }
@@ -23,11 +25,17 @@ if (! (isset($_SESSION["account_type"]))) {
 }
 
 try {
-    $conn = new PDO("mysql:host={$Sys_config["db_host"]};dbname={$Sys_config["db_database"]};", $Sys_config["db_user"], $Sys_config["db_password"]);
+    $db_host = env('db_host');
+    $db_user = env('db_user');
+    $db_password = env('db_password');
+    $db_database = env('db_database');
+    $conn = new PDO("mysql:host=$db_host;dbname=$db_database;", $db_user, $db_password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-    $conn->exec("set names utf8"); //设置编码
 } catch (PDOException $e) {
     die("Connection failed: " . $e->getMessage());
 }
+
+global $antiXss;
+$antiXss = new AntiXSS();
 ?>

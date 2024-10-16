@@ -1,26 +1,21 @@
 <?php
-
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    include "include/common.php";
-    header('Content-Type: application/json');
-    $data = [
-        'username' => $_POST['username'],
-        'email' => $_POST['email'],
-        'password' => $_POST['password'],
-        'confirm_password' => $_POST['confirm_password'],
-        'role' => $_POST['role']
-    ];
-    //TODO Validate the input data
-    $user = new User();
-    $result = $user->register($data);
-    echo json_encode($result);
-    exit();
-} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    include_once("header.php");
-} else {
-    http_response_code(405);
-    exit();
+switch ($_SERVER['REQUEST_METHOD']) {
+    case 'POST':
+        include "include/common.php";
+        header('Content-Type: application/json');
+        $user = new User();
+        $result = $user->register($_POST);
+        if ($result['ret'] === 1) {
+            header('HX-Redirect: login.php');
+        }
+        echo json_encode($result);
+        exit();
+    case 'GET':
+        include_once("header.php");
+        break;
+    default:
+        http_response_code(405);
+        exit();
 }
 ?>
     <body class=" d-flex flex-column">
