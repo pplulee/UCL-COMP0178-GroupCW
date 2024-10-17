@@ -18,6 +18,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         exit();
 }
 ?>
+<title><?php echo env('app_name')?> - Login</title>
     <body class="d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">

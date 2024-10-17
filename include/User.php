@@ -6,11 +6,12 @@ use voku\helper\AntiXSS;
 
 class User
 {
-    private string $username;
-    private string $email;
+    public int $id;
+    public string $username;
+    public string $email;
     private string $password;
-    private string $role;
-    private string $uuid;
+    public string $role;
+    public string $uuid;
 
     public function __construct()
     {
@@ -146,5 +147,83 @@ class User
             'ret' => 1,
             'msg' => 'Login successful'
         ];
+    }
+
+    public function fetch(int $id): User|null
+    {
+        global $conn;
+        $stmt = $conn->prepare('SELECT * FROM user WHERE id = :id');
+        $stmt->execute([
+            'id' => $id
+        ]);
+        $user = $stmt->fetch();
+        if (! $user) {
+            return null;
+        }
+        $this->id = $user['id'];
+        $this->username = $user['username'];
+        $this->email = $user['email'];
+        $this->role = $user['role'];
+        $this->uuid = $user['uuid'];
+        return $this;
+    }
+
+    public function update(array $data): array
+    {
+        $antiXss = new AntiXSS();
+        $data = $antiXss->xss_clean($data);
+        // Data validation
+        $result = validate($data, [
+            'username' => 'required|min:5|max:255',
+            'email' => 'required|email',
+            'password' => 'min:6',
+        ], [
+            'username:required' => 'Username is required',
+            'username:min' => 'Username must be at least 6 characters',
+            'username:max' => 'Username must not exceed 255 characters',
+            'email:required' => 'Email is required',
+            'email:email' => 'Email is invalid',
+            'password:min' => 'Password must be at least 6 characters',
+        ]);
+        if ($result['ret'] === 0) {
+            return $result;
+        }
+        // Check if the user with same username or email exists
+        global $conn;
+        $stmt = $conn->prepare('SELECT * FROM user WHERE (username = :username OR email = :email) AND id != :id');
+        $stmt->execute([
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'id' => $this->id
+        ]);
+        $user = $stmt->fetch();
+        if ($user) {
+            return [
+                'ret' => 0,
+                'msg' => 'User already exists'
+            ];
+        }
+        $this->username = $data['username'];
+        $this->email = $data['email'];
+        if (isset($data['password'])) {
+            $this->password = password_hash($data['password'], getPasswordMethod());
+        }
+        $stmt = $conn->prepare('UPDATE user SET username = :username, email = :email, password = :password WHERE id = :id');
+        $stmt->execute([
+            'username' => $this->username,
+            'email' => $this->email,
+            'password' => $this->password,
+            'id' => $this->id
+        ]);
+        return [
+            'ret' => 1,
+            'msg' => 'User updated successfully'
+        ];
+
+    }
+
+    public function getPasswordSha256(): string
+    {
+        return hash('sha256', $this->password);
     }
 }

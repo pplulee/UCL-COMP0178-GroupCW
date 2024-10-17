@@ -8,8 +8,18 @@
 </body>
 <script>
     htmx.on("htmx:afterRequest", function (evt) {
-        let res = JSON.parse(evt.detail.xhr.response);
         const timeout = 1000;
+        try {
+            res = JSON.parse(evt.detail.xhr.response);
+        } catch (e) {
+            Swal.fire({
+                heightAuto: false,
+                icon: 'error',
+                title: 'System error',
+                text: 'An error occurred while processing the response.'
+            });
+            return;
+        }
 
         if (res.ret === 1) {
             Swal.fire({

@@ -21,10 +21,7 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
           crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <script src="https://fastly.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-
-    <title>[My Auction Site]</title>
 </head>
-
 
 <body>
 <header class="navbar navbar-expand-md">
@@ -36,24 +33,32 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
         <a class="navbar-brand" href="/">Site Name</a>
         <div class="collapse navbar-collapse" id="navbar-menu">
             <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="/admin">
-                    <span class="nav-link-title">
-                        <i class="fas fa-gear"></i> Admin Panel
-                    </span>
-                    </a>
-                </li>
+                <?php if ($_SESSION['logged_in'] === true): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="profile.php">
+                        <span class="nav-link-title">
+                            <i class="fas fa-user"></i> My Profile
+                        </span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <?php if ($_SESSION['role'] === 'ADMIN'): ?>
+                            <a class="nav-link" href="/admin">
+                            <span class="nav-link-title">
+                                <i class="fas fa-gear"></i> Admin Panel
+                            </span>
+                            </a>
+                        <?php endif; ?>
+                    </li>
+                <?php endif; ?>
             </ul>
         </div>
-        <?php
-        // Displays either login or logout on the right, depending on user's
-        // current status (session).
-        if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-            echo '<button class="btn btn-danger order-md-last" hx-post="logout.php" hx-trigger="click" hx-swap="none">Logout</button>';
-        } else {
-            echo '<a class="btn btn-primary order-md-last" href="login.php">Login</a>';
-        }
-        ?>
+        <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true): ?>
+            <button class="btn btn-danger order-md-last" hx-post="logout.php" hx-trigger="click" hx-swap="none">Logout
+            </button>
+        <?php else: ?>
+            <a class="btn btn-primary order-md-last" href="login.php">Login</a>
+        <?php endif; ?>
     </div>
 </header>
 
