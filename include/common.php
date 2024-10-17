@@ -1,13 +1,12 @@
 <?php
 
+use Phpfastcache\Helper\Psr16Adapter;
 use voku\helper\AntiXSS;
 
 header('Content-Type: text/html; charset=UTF-8');
 include $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 include $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 include("function.php");
-include("User.php");
-
 
 //Enable error reporting
 if (env("debug", false)) {
@@ -38,4 +37,7 @@ try {
 
 global $antiXss;
 $antiXss = new AntiXSS();
+
+global $cache;
+$cache = new Psr16Adapter('Files');
 ?>

@@ -9,8 +9,13 @@
         "voku/anti-xss": "^4.1",
         "rakit/validation": "^1.4",
         "web-auth/webauthn-framework": "^5.0",
-        "vectorface/googleauthenticator": "^3.0"
+        "vectorface/googleauthenticator": "^3.0",
+        "phpfastcache/phpfastcache": "^9.2"
     },
     "autoload": {
+        "psr-4": {
+            "model\\": "include/model/",
+            "service\\MFA\\": "include/MFA/"
+        }
     }
 }

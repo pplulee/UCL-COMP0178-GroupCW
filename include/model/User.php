@@ -1,5 +1,7 @@
 <?php
 
+namespace model;
+
 use Firebase\JWT\JWT;
 use Ramsey\Uuid\Uuid;
 use voku\helper\AntiXSS;
@@ -9,12 +11,13 @@ class User
     public int $id;
     public string $username;
     public string $email;
-    private string $password;
     public string $role;
     public string $uuid;
+    private string $password;
 
     public function __construct()
     {
+        $this->id = 0;
         $this->username = '';
         $this->email = '';
         $this->password = '';
@@ -90,6 +93,25 @@ class User
         ];
     }
 
+    public function fetch(int $id): User|null
+    {
+        global $conn;
+        $stmt = $conn->prepare('SELECT * FROM user WHERE id = :id');
+        $stmt->execute([
+            'id' => $id
+        ]);
+        $user = $stmt->fetch();
+        if (! $user) {
+            return null;
+        }
+        $this->id = $user['id'];
+        $this->username = $user['username'];
+        $this->email = $user['email'];
+        $this->role = $user['role'];
+        $this->uuid = $user['uuid'];
+        return $this;
+    }
+
     public function login(array $data): array
     {
         $antiXss = new AntiXSS();
@@ -110,7 +132,7 @@ class User
         }
         $this->email = $data['email'];
         $this->password = $data['password'];
-        global $conn;
+        global $conn, $cache;
         // Check user exist
         $stmt = $conn->prepare('SELECT * FROM user WHERE email = :email');
         $stmt->execute([
@@ -129,6 +151,15 @@ class User
                 'msg' => 'Invalid email or password'
             ];
         }
+        $this->id = $user['id'];
+        if ($this->checkMfaStatus()['require']) {
+            $cache->set('mfa_userid_' . session_id(), $user['id'], 300);
+            return [
+                'ret' => 1,
+                'msg' => 'Please complete two-factor authentication',
+                'redir' => 'mfa.php'
+            ];
+        }
         if ($data['rememberMe'] === 'true') {
             // Set cookie using JWT
             $payload = [
@@ -145,27 +176,29 @@ class User
         $_SESSION['role'] = $user['role'];
         return [
             'ret' => 1,
-            'msg' => 'Login successful'
+            'msg' => 'Login successful',
+            'redir' => 'index.php'
         ];
     }
 
-    public function fetch(int $id): User|null
+    public function checkMfaStatus(): array
     {
         global $conn;
-        $stmt = $conn->prepare('SELECT * FROM user WHERE id = :id');
+        $stmt = $conn->prepare('SELECT * FROM mfa_credential WHERE userid = :userid AND type = "fido"');
         $stmt->execute([
-            'id' => $id
+            'userid' => $this->id
         ]);
-        $user = $stmt->fetch();
-        if (! $user) {
-            return null;
+        $fido = $stmt->fetch();
+        $stmt = $conn->prepare('SELECT * FROM mfa_credential WHERE userid = :userid AND type = "totp"');
+        $stmt->execute([
+            'userid' => $this->id
+        ]);
+        $totp = $stmt->fetch();
+        if (! $fido && ! $totp) {
+            return ['require' => false];
+        } else {
+            return ['require' => true, 'fido' => (bool) $fido, 'totp' => (bool) $totp];
         }
-        $this->id = $user['id'];
-        $this->username = $user['username'];
-        $this->email = $user['email'];
-        $this->role = $user['role'];
-        $this->uuid = $user['uuid'];
-        return $this;
     }
 
     public function update(array $data): array
@@ -225,5 +258,16 @@ class User
     public function getPasswordSha256(): string
     {
         return hash('sha256', $this->password);
+    }
+
+    public function getMfaDevices(string $type): array
+    {
+        global $conn;
+        $stmt = $conn->prepare('SELECT * FROM mfa_credential WHERE userid = :userid AND type = :type');
+        $stmt->execute([
+            'userid' => $this->id,
+            'type' => $type
+        ]);
+        return $stmt->fetchAll();
     }
 }

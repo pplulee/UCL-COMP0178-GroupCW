@@ -1,4 +1,13 @@
 <?php
+
+use model\User;
+
+include_once "include/common.php";
+if ($_SESSION['logged_in'] === true) {
+    header('Location: index.php');
+    exit();
+}
+
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
         include "include/common.php";
@@ -18,7 +27,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         exit();
 }
 ?>
-<title><?php echo env('app_name')?> - Register</title>
+    <title><?php echo env('app_name') ?> - Register</title>
     <body class=" d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">

@@ -4,3 +4,4 @@ config.php
 *.iml
 .DS_Store
 Thumbs.db
+composer.lock
