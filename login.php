@@ -1,12 +1,21 @@
 <?php
+
+use model\User;
+
+include_once "include/common.php";
+if ($_SESSION['logged_in'] === true) {
+    header('Location: index.php');
+    exit();
+}
+
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
-        include "include/common.php";
         header('Content-Type: application/json');
         $user = new User();
         $result = $user->login($_POST);
         if ($result['ret'] === 1) {
-            header('HX-Redirect: index.php');
+            $redir = $result['redir'];
+            header("HX-Redirect: $redir");
         }
         echo json_encode($result);
         exit();
@@ -18,7 +27,9 @@ switch ($_SERVER['REQUEST_METHOD']) {
         exit();
 }
 ?>
-<title><?php echo env('app_name')?> - Login</title>
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+
+    <title><?php echo env('app_name') ?> - Login</title>
     <body class="d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">
@@ -61,6 +72,9 @@ switch ($_SERVER['REQUEST_METHOD']) {
                             }'>
                             Login
                         </button>
+                        <button class="btn btn-primary w-100 mt-3" id="webauthnLogin">
+                            Login with WebAuthn
+                        </button>
                     </div>
                 </div>
             </div>
@@ -70,4 +84,45 @@ switch ($_SERVER['REQUEST_METHOD']) {
         </div>
     </div>
     </body>
+    <script>
+        const {startAuthentication} = SimpleWebAuthnBrowser;
+        document.getElementById('webauthnLogin').addEventListener('click', async () => {
+            const resp = await fetch('/mfa/webauthn_login.php');
+            const options = await resp.json();
+            let asseResp;
+            try {
+                asseResp = await startAuthentication({optionsJSON: options});
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message
+                });
+                throw error;
+            }
+            const verificationResp = await fetch('/mfa/webauthn_login.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(asseResp),
+            });
+            const verificationJSON = await verificationResp.json();
+            if (verificationJSON.ret === 1) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: verificationJSON.msg
+                }).then(() => {
+                    window.location.href = verificationJSON.redir;
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: verificationJSON.msg
+                });
+            }
+        });
+    </script>
 <?php include_once("footer.php") ?>
