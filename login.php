@@ -18,7 +18,9 @@ switch ($_SERVER['REQUEST_METHOD']) {
         exit();
 }
 ?>
-<title><?php echo env('app_name')?> - Login</title>
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+
+    <title><?php echo env('app_name') ?> - Login</title>
     <body class="d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">

@@ -7,7 +7,9 @@
         "ramsey/uuid": "^4.2",
         "firebase/php-jwt": "^6.0",
         "voku/anti-xss": "^4.1",
-        "rakit/validation": "^1.4"
+        "rakit/validation": "^1.4",
+        "web-auth/webauthn-framework": "^5.0",
+        "vectorface/googleauthenticator": "^3.0"
     },
     "autoload": {
     }
