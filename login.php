@@ -45,7 +45,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     <div class="mb-2">
                         <label class="form-label"><i class="fa-solid fa-lock"></i> Password
                             <span class="form-label-description">
-                            <a href="/auth/reset">Forgot password</a>
+                            <a href="reset.php">Forgot password</a>
                         </span>
                         </label>
                         <div class="input-group input-group-flat">

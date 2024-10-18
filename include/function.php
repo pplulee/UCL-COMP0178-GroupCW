@@ -1,6 +1,9 @@
 <?php
 
 use Rakit\Validation\Validator;
+use service\Mail\NullMail;
+use service\Mail\Postal;
+use service\Mail\Smtp;
 
 function php_self(): string
 {
@@ -30,4 +33,33 @@ function validate(array $data, array $rules, array $messages): array
             'msg' => 'Success'
         ];
     }
+}
+
+function getMailDriver(): NullMail|Postal|Smtp
+{
+    $mailDriver = env('email_driver');
+    return match ($mailDriver) {
+        'smtp' => new Smtp(),
+        'postal' => new Postal(),
+        default => new NullMail(),
+    };
+}
+
+function sendmail(string $to, string $subject, string $message): array
+{
+    if (empty($to)) {
+        return [
+            'msg' => 'Email address is empty',
+            'ret' => 0
+        ];
+    }
+    if (! filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return [
+            'msg' => 'Email address is invalid',
+            'ret' => 0
+        ];
+    }
+    $mailDriver = getMailDriver();
+    return $mailDriver->send($to, $subject, $message);
+
 }
