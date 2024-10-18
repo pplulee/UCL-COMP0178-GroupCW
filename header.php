@@ -1,7 +1,7 @@
 <?php
 include_once "include/common.php";
 //TODO - Cookie Login
-if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "login.php", "register.php", "mfa.php")))) {
+if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "login.php", "register.php", "mfa.php", "reset.php")))) {
     echo "<script>window.location.href='login.php';</script>"; // Redirect to login page
     exit;
 }
