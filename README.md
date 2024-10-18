@@ -8,6 +8,11 @@
 - [x] Login
 - [x] Logout
 - [x] Update Profile
-- [ ] 2-Factor Authentication
-- [ ] Forgot Password
+- [x] 2-Factor Authentication
+- [x] Forgot Password
 - [ ] (Admin) View Users
+
+## Auction
+- [ ] Post Items
+- [ ] Bid on Items
+- [ ] View Items
