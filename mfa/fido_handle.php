@@ -42,6 +42,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $user->id;
             $_SESSION['role'] = $user->role;
+            if ($cache->get('mfa_rememberme_' . session_id()) === true) {
+                setcookie('user', $user->email, time() + 2592000, '/');
+                setcookie('uuid', $user->uuid, time() + 2592000, '/');
+            }
+            $cache->delete('mfa_userid_' . session_id());
+            $cache->delete('mfa_rememberme_' . session_id());
             echo json_encode(['ret' => 1, 'msg' => 'Login successful', 'redir' => '/']);
         } else {
             echo json_encode($result);

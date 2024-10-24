@@ -154,6 +154,7 @@ class User
         $this->id = $user['id'];
         if ($this->checkMfaStatus()['require']) {
             $cache->set('mfa_userid_' . session_id(), $user['id'], 300);
+            $cache->set('mfa_rememberme_' . session_id(), $data['rememberMe'] === 'true', 300);
             return [
                 'ret' => 1,
                 'msg' => 'Please complete two-factor authentication',
@@ -170,6 +171,7 @@ class User
             ];
             $jwt = JWT::encode($payload, hash('sha256', $user['password']), 'HS256');
             setcookie('user', $jwt, time() + 2592000, '/');
+            setcookie('uuid', $user['uuid'], time() + 2592000, '/');
         }
         $_SESSION['logged_in'] = true;
         $_SESSION['user_id'] = $user['id'];

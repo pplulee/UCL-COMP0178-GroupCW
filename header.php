@@ -1,6 +1,42 @@
 <?php
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
 include_once "include/common.php";
-//TODO - Cookie Login
+global $conn;
+
+// Cookie login
+if ($_SESSION['logged_in'] === false && isset($_COOKIE['user']) && isset($_COOKIE['uuid'])) {
+    $cookie = $_COOKIE['user'];
+    $uuid = $_COOKIE['uuid'];
+    $stmt = $conn->prepare('SELECT id,password,role FROM user WHERE uuid = :uuid');
+    $stmt->execute([
+        'uuid' => $uuid
+    ]);
+    $user = $stmt->fetch();
+    if (! $user) {
+        setcookie('user', '', time() - 3600, '/');
+        setcookie('uuid', '', time() - 3600, '/');
+    } else {
+        // Decode JWT
+        try {
+            $decoded = JWT::decode($cookie, new Key(hash('sha256', $user['password']), 'HS256'));
+            if ($decoded->uuid !== $uuid) {
+                setcookie('user', '', time() - 3600, '/');
+                setcookie('uuid', '', time() - 3600, '/');
+            } else {
+                $_SESSION['logged_in'] = true;
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role'] = $user['role'];
+            }
+        } catch (Exception $e) {
+            setcookie('user', '', time() - 3600, '/');
+            setcookie('uuid', '', time() - 3600, '/');
+        }
+    }
+}
+
 if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "login.php", "register.php", "mfa.php", "reset.php")))) {
     echo "<script>window.location.href='login.php';</script>"; // Redirect to login page
     exit;

@@ -4,9 +4,9 @@ use Phpfastcache\Helper\Psr16Adapter;
 use voku\helper\AntiXSS;
 
 header('Content-Type: text/html; charset=UTF-8');
-include $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-include $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
-include("function.php");
+include_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
+include_once($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
+include_once("function.php");
 
 //Enable error reporting
 if (env("debug", false)) {

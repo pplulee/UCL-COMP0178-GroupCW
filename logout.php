@@ -7,6 +7,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         unset($_SESSION['role']);
         unset($_SESSION['user_id']);
         setcookie('user', '', time(), '/');
+        setcookie('uuid', '', time(), '/');
         header('HX-Redirect: login.php');
         echo json_encode([
             'ret' => 1,
