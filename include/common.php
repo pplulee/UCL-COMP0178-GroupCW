@@ -25,10 +25,11 @@ if (! (isset($_SESSION["account_type"]))) {
 
 try {
     $db_host = env('db_host');
+    $db_port = env('db_port');
     $db_user = env('db_user');
     $db_password = env('db_password');
     $db_database = env('db_database');
-    $conn = new PDO("mysql:host=$db_host;dbname=$db_database;", $db_user, $db_password);
+    $conn = new PDO("mysql:host=$db_host;dbname=$db_database;port=$db_port", $db_user, $db_password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 } catch (PDOException $e) {
