@@ -1,5 +1,5 @@
 <?php
-
+include_once "config.php";
 return
     [
         'paths' => [
@@ -11,11 +11,11 @@ return
             'default_environment' => 'development',
             'development' => [
                 'adapter' => 'mysql',
-                'host' => 'localhost',
-                'name' => 'auction',
-                'user' => 'root',
-                'pass' => '123456',
-                'port' => '3306',
+                'host' => env('db_host'),
+                'name' => env('db_user'),
+                'user' => env('db_database'),
+                'pass' => env('db_password'),
+                'port' => env('db_port'),
                 'charset' => 'utf8',
             ]
         ],
