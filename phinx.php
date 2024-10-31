@@ -12,8 +12,8 @@ return
             'development' => [
                 'adapter' => 'mysql',
                 'host' => env('db_host'),
-                'name' => env('db_user'),
-                'user' => env('db_database'),
+                'name' => env('db_database'),
+                'user' => env('db_user'),
                 'pass' => env('db_password'),
                 'port' => env('db_port'),
                 'charset' => 'utf8',

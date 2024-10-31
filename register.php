@@ -61,19 +61,6 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                    placeholder="Please repeat the password" required type="password">
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <div class="form-label">Role</div>
-                        <div>
-                            <label class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="role" value="SELLER" checked>
-                                <span class="form-check-label">Seller</span>
-                            </label>
-                            <label class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="role" value="BUYER">
-                                <span class="form-check-label">Buyer</span>
-                            </label>
-                        </div>
-                    </div>
                     <div class="form-footer">
                         <button class="btn btn-primary w-100"
                                 hx-post="register.php"
@@ -84,7 +71,6 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                 email: document.getElementById("email").value,
                                 password: document.getElementById("password").value,
                                 confirm_password: document.getElementById("confirm_password").value,
-                                role: document.querySelector("input[name=role]:checked").value
                             }'>
                             Register
                         </button>

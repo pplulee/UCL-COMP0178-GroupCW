@@ -4,7 +4,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         include "include/common.php";
         header('Content-Type: application/json');
         unset($_SESSION['logged_in']);
-        unset($_SESSION['role']);
+        unset($_SESSION['admin']);
         unset($_SESSION['user_id']);
         setcookie('user', '', time(), '/');
         setcookie('uuid', '', time(), '/');

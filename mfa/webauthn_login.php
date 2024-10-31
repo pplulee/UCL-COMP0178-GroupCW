@@ -23,7 +23,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $user = $result['user'];
             $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $user->id;
-            $_SESSION['role'] = $user->role;
+            $_SESSION['admin'] = $user->admin;
             echo json_encode(['ret' => 1, 'msg' => 'Login successful', 'redir' => '/']);
         } else {
             echo json_encode($result);

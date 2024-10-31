@@ -28,7 +28,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         if ($result['ret'] === 1) {
             $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $user->id;
-            $_SESSION['role'] = $user->role;
+            $_SESSION['admin'] = $user->admin;
             if ($cache->get('mfa_rememberme_' . session_id()) === true) {
                 setcookie('user', $user->email, time() + 2592000, '/');
                 setcookie('uuid', $user->uuid, time() + 2592000, '/');

@@ -11,8 +11,8 @@ class User
     public int $id;
     public string $username;
     public string $email;
-    public string $role;
     public string $uuid;
+    public bool $admin;
     private string $password;
 
     public function __construct()
@@ -21,8 +21,8 @@ class User
         $this->username = '';
         $this->email = '';
         $this->password = '';
-        $this->role = '';
         $this->uuid = '';
+        $this->admin = false;
     }
 
     public function register(array $data): array
@@ -35,7 +35,6 @@ class User
             'email' => 'required|email',
             'password' => 'required|min:6',
             'confirm_password' => 'required|same:password',
-            'role' => 'required|in:SELLER,BUYER'
         ], [
             'username:required' => 'Username is required',
             'username:min' => 'Username must be at least 6 characters',
@@ -46,8 +45,6 @@ class User
             'password:min' => 'Password must be at least 6 characters',
             'confirm_password:required' => 'Confirm password is required',
             'confirm_password:same' => 'Passwords do not match',
-            'role:required' => 'Role is required',
-            'role:in' => 'Invalid role'
         ]);
         if ($result['ret'] === 0) {
             echo json_encode($result);
@@ -56,14 +53,7 @@ class User
         $this->username = $data['username'];
         $this->email = $data['email'];
         $this->password = password_hash($data['password'], getPasswordMethod());
-        $this->role = $data['role'];
         $this->uuid = Uuid::uuid4()->toString();
-        if (! in_array($this->role, ['SELLER', 'BUYER'])) {
-            return [
-                'ret' => 0,
-                'msg' => 'Invalid role'
-            ];
-        }
         global $conn;
         // Check if the user already exists
         $stmt = $conn->prepare('SELECT * FROM user WHERE username = :username OR email = :email');
@@ -78,12 +68,11 @@ class User
                 'msg' => 'User already exists'
             ];
         }
-        $stmt = $conn->prepare('INSERT INTO user (username, email, password, role, uuid, created_at) VALUES (:username, :email, :password, :role, :uuid, :created_at)');
+        $stmt = $conn->prepare('INSERT INTO user (username, email, password, uuid, created_at) VALUES (:username, :email, :password, :uuid, :created_at)');
         $stmt->execute([
             'username' => $this->username,
             'email' => $this->email,
             'password' => $this->password,
-            'role' => $this->role,
             'uuid' => $this->uuid,
             'created_at' => date('Y-m-d H:i:s')
         ]);
@@ -107,8 +96,8 @@ class User
         $this->id = $user['id'];
         $this->username = $user['username'];
         $this->email = $user['email'];
-        $this->role = $user['role'];
         $this->uuid = $user['uuid'];
+        $this->admin = $user['admin'];
         return $this;
     }
 
@@ -175,7 +164,7 @@ class User
         }
         $_SESSION['logged_in'] = true;
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = $user['role'];
+        $_SESSION['admin'] = $user['admin'];
         return [
             'ret' => 1,
             'msg' => 'Login successful',

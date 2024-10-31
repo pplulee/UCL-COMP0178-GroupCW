@@ -10,7 +10,7 @@ global $conn;
 if ($_SESSION['logged_in'] === false && isset($_COOKIE['user']) && isset($_COOKIE['uuid'])) {
     $cookie = $_COOKIE['user'];
     $uuid = $_COOKIE['uuid'];
-    $stmt = $conn->prepare('SELECT id,password,role FROM user WHERE uuid = :uuid');
+    $stmt = $conn->prepare('SELECT id,password,admin FROM user WHERE uuid = :uuid');
     $stmt->execute([
         'uuid' => $uuid
     ]);
@@ -27,8 +27,8 @@ if ($_SESSION['logged_in'] === false && isset($_COOKIE['user']) && isset($_COOKI
                 setcookie('uuid', '', time() - 3600, '/');
             } else {
                 $_SESSION['logged_in'] = true;
+                $_SESSION['admin'] = $user['admin'];
                 $_SESSION['user_id'] = $user['id'];
-                $_SESSION['role'] = $user['role'];
             }
         } catch (Exception $e) {
             setcookie('user', '', time() - 3600, '/');
@@ -78,7 +78,7 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
                         </a>
                     </li>
                     <li class="nav-item">
-                        <?php if ($_SESSION['role'] === 'ADMIN'): ?>
+                        <?php if ($_SESSION['admin']): ?>
                             <a class="nav-link" href="/admin">
                             <span class="nav-link-title">
                                 <i class="fas fa-gear"></i> Admin Panel
