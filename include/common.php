@@ -15,12 +15,14 @@ if (env("debug", false)) {
 }
 
 //Initialize session
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (! (isset($_SESSION["logged_in"]))) {
     $_SESSION["logged_in"] = false;
 }
-if (! (isset($_SESSION["account_type"]))) {
-    $_SESSION["account_type"] = null;
+if (! (isset($_SESSION["admin"]))) {
+    $_SESSION["admin"] = false;
 }
 
 try {

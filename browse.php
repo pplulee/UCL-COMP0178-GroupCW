@@ -1,58 +1,51 @@
-<?php include_once("header.php") ?>
-
-    <div class="container">
-
-        <h2 class="my-3">Browse listings</h2>
-
-        <div id="searchSpecs">
-            <!-- When this form is submitted, this PHP page is what processes it.
-                 Search/sort specs are passed to this page through parameters in the URL
-                 (GET method of passing data to a page). -->
-            <form method="get" action="browse.php">
-                <div class="row">
-                    <div class="col-md-5 pr-0">
-                        <div class="form-group">
-                            <label for="keyword" class="sr-only">Search keyword:</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-            <span class="input-group-text bg-transparent pr-0 text-muted">
-              <i class="fa fa-search"></i>
-            </span>
-                                </div>
-                                <input type="text" class="form-control border-left-0" id="keyword"
-                                       placeholder="Search for anything">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 pr-0">
-                        <div class="form-group">
-                            <label for="cat" class="sr-only">Search within:</label>
-                            <select class="form-control" id="cat">
-                                <option selected value="all">All categories</option>
-                                <option value="fill">Fill me in</option>
-                                <option value="with">with options</option>
-                                <option value="populated">populated from a database?</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3 pr-0">
-                        <div class="form-inline">
-                            <label class="mx-2" for="order_by">Sort by:</label>
-                            <select class="form-control" id="order_by">
-                                <option selected value="pricelow">Price (low to high)</option>
-                                <option value="pricehigh">Price (high to low)</option>
-                                <option value="date">Soonest expiry</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-1 px-0">
-                        <button type="submit" class="btn btn-primary">Search</button>
+<?php
+include_once("header.php");
+$selectedID = isset($_GET['category']) ? (int) $_GET['category'] : 0;
+?>
+    <title></title>
+    <div class="page-wrapper">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Browse Items
+                        </h2>
                     </div>
                 </div>
-            </form>
-        </div> <!-- end search specs bar -->
+            </div>
+        </div>
+        <div class="page-body">
+            <div class="container-xl">
+                <div class="row g-4">
+                    <div class="col-3">
+                        <div class="subheader mb-2">Category</div>
+                        <div class="list-group list-group-transparent mb-3">
+                            <a class="list-group-item list-group-item-action d-flex align-items-center<?= $selectedID == 0 ? "active" : "" ?>">
+                                All
+                            </a>
+                            <?php
+                            global $conn;
+                            $result = $conn->query("SELECT * FROM category");
+                            $result = $result->fetchAll();
+                            foreach ($result as $row) {
+                                $selected = ($selectedID == $row['id']) ? "active" : "";
+                                ?>
+                                <a class="list-group-item list-group-item-action d-flex align-items-center <?php echo $selected ?>"
+                                   href="browse.php?category=<?php echo $row['id'] ?>">
+                                    <?php echo htmlspecialchars($row['name']); ?>
+                                </a>
+                                <?php
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    <div class="col-9">
 
-
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 <?php
