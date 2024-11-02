@@ -1,106 +1,172 @@
-<?php include_once("header.php") ?>
-
 <?php
-/* (Uncomment this block to redirect people without selling privileges away from this page)
-  // If user is not logged in or not a seller, they should not be able to
-  // use this page.
-  if (!isset($_SESSION['account_type']) || $_SESSION['account_type'] != 'seller') {
-    header('Location: browse.php');
-  }
-*/
+include_once "include/common.php";
+global $conn;
+
+switch ($_SERVER['REQUEST_METHOD']) {
+    case 'POST':
+        header('Content-Type: application/json');
+        $auctionItem = new model\AuctionItem();
+        $result = $auctionItem->create($_POST);
+        echo json_encode($result);
+        exit();
+    case 'GET':
+        include_once("header.php");
+        $categories = (new model\AuctionItem)->getCategories();
+        break;
+    default:
+        http_response_code(405);
+        exit();
+}
 ?>
-
-    <div class="container">
-
-        <!-- Create auction form -->
-        <div style="max-width: 800px; margin: 10px auto">
-            <h2 class="my-3">Create new auction</h2>
-            <div class="card">
-                <div class="card-body">
-                    <!-- Note: This form does not do any dynamic / client-side /
-                    JavaScript-based validation of data. It only performs checking after
-                    the form has been submitted, and only allows users to try once. You
-                    can make this fancier using JavaScript to alert users of invalid data
-                    before they try to send it, but that kind of functionality should be
-                    extremely low-priority / only done after all database functions are
-                    complete. -->
-                    <form method="post" action="create_auction_result.php">
-                        <div class="form-group row">
-                            <label for="auctionTitle" class="col-sm-2 col-form-label text-right">Title of
-                                auction</label>
-                            <div class="col-sm-10">
-                                <input type="text" class="form-control" id="auctionTitle"
-                                       placeholder="e.g. Black mountain bike">
-                                <small id="titleHelp" class="form-text text-muted"><span
-                                            class="text-danger">* Required.</span> A short description of the item
-                                    you're selling, which will display in listings.</small>
-                            </div>
+    <title><?= env('app_name') ?> - Post Item</title>
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <link href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" rel="stylesheet" type="text/css"/>
+    <body>
+    <div class="page">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">Post Item</h3>
                         </div>
-                        <div class="form-group row">
-                            <label for="auctionDetails" class="col-sm-2 col-form-label text-right">Details</label>
-                            <div class="col-sm-10">
-                                <textarea class="form-control" id="auctionDetails" rows="4"></textarea>
-                                <small id="detailsHelp" class="form-text text-muted">Full details of the listing to help
-                                    bidders decide if it's what they're looking for.</small>
-                            </div>
-                        </div>
-                        <div class="form-group row">
-                            <label for="auctionCategory" class="col-sm-2 col-form-label text-right">Category</label>
-                            <div class="col-sm-10">
-                                <select class="form-control" id="auctionCategory">
-                                    <option selected>Choose...</option>
-                                    <option value="fill">Fill me in</option>
-                                    <option value="with">with options</option>
-                                    <option value="populated">populated from a database?</option>
-                                </select>
-                                <small id="categoryHelp" class="form-text text-muted"><span class="text-danger">* Required.</span>
-                                    Select a category for this item.</small>
-                            </div>
-                        </div>
-                        <div class="form-group row">
-                            <label for="auctionStartPrice" class="col-sm-2 col-form-label text-right">Starting
-                                price</label>
-                            <div class="col-sm-10">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">£</span>
-                                    </div>
-                                    <input type="number" class="form-control" id="auctionStartPrice">
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data" id="auction-form" action="">
+                                <div class="mb-3">
+                                    <label class="form-label required">Item Name</label>
+                                    <input type="text" class="form-control" name="name" placeholder="Enter item title"
+                                           required>
                                 </div>
-                                <small id="startBidHelp" class="form-text text-muted"><span class="text-danger">* Required.</span>
-                                    Initial bid amount.</small>
-                            </div>
-                        </div>
-                        <div class="form-group row">
-                            <label for="auctionReservePrice" class="col-sm-2 col-form-label text-right">Reserve
-                                price</label>
-                            <div class="col-sm-10">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">£</span>
+                                <div class="row mb-3">
+                                    <div class="col-12 col-md">
+                                        <label class="form-label required">Start Price (£)</label>
+                                        <input type="number" class="form-control" name="start_price"
+                                               placeholder="Enter start price" required>
                                     </div>
-                                    <input type="number" class="form-control" id="auctionReservePrice">
+                                    <div class="col-12 col-md">
+                                        <label class="form-label">Reserve Price (£)</label>
+                                        <input type="number" class="form-control" name="reserve_price"
+                                               placeholder="Enter reserve price" required>
+                                    </div>
+                                    <div class="col-12 col-md">
+                                        <label class="form-label required">Bid Increment (£)</label>
+                                        <input type="number" class="form-control" name="bid_increment"
+                                               placeholder="Enter bid increment" required>
+                                    </div>
                                 </div>
-                                <small id="reservePriceHelp" class="form-text text-muted">Optional. Auctions that end
-                                    below this price will not go through. This value is not displayed in the auction
-                                    listing.</small>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label required">Category</label>
+                                    <select class="form-control" name="category_id" required>
+                                        <option value="0" disabled selected>Select a category</option>
+                                        <?php foreach ($categories as $id => $name): ?>
+                                            <option value="<?= $id ?>"><?= $name ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label required">Description</label>
+                                    <textarea class="form-control" name="description" id="description"
+                                              placeholder="Enter item description" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label required">Auction End Date</label>
+                                    <input type="datetime-local" class="form-control" name="end_date" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label required">Upload Images</label>
+                                    <div class="dropzone" id="myDropzone"></div>
+                                </div>
+                                <div class="form-footer">
+                                    <button type="submit" class="btn btn-primary submit" id="submit-button">
+                                        Submit
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="form-group row">
-                            <label for="auctionEndDate" class="col-sm-2 col-form-label text-right">End date</label>
-                            <div class="col-sm-10">
-                                <input type="datetime-local" class="form-control" id="auctionEndDate">
-                                <small id="endDateHelp" class="form-text text-muted"><span class="text-danger">* Required.</span>
-                                    Day for the auction to end.</small>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary form-control">Create Auction</button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script>
+        var easyMDE = new EasyMDE({element: document.getElementById('description'), spellChecker: false});
+    </script>
+    <script>
+        Dropzone.options.myDropzone = {
+            url: 'create_auction.php',
+            dictDefaultMessage: "Drop images here or click to upload",
+            autoProcessQueue: false,
+            uploadMultiple: true,
+            parallelUploads: 5,
+            maxFiles: 10,
+            maxFilesize: 10,
+            acceptedFiles: 'image/*',
+            addRemoveLinks: true,
+            resizeWidth: 1024,
+            resizeMimeType: 'image/jpeg',
+            init: function () {
+                var dzClosure = this;
+                document.querySelector('.submit').addEventListener("click", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (dzClosure.getQueuedFiles().length === 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Please upload at least one image'
+                        });
+                        return;
+                    }
+                    dzClosure.processQueue();
+                });
+                this.on("sendingmultiple", function (data, xhr, formData) {
+                    formData.append("name", document.querySelector('input[name=name]').value);
+                    formData.append("description", easyMDE.value());
+                    formData.append("start_price", document.querySelector('input[name=start_price]').value);
+                    formData.append("reserve_price", document.querySelector('input[name=reserve_price]').value);
+                    formData.append("bid_increment", document.querySelector('input[name=bid_increment]').value);
+                    formData.append("category_id", document.querySelector('select[name=category_id]').value);
+                    formData.append("end_date", document.querySelector('input[name=end_date]').value);
+                });
+                this.on("successmultiple", function (files, response) {
+                    if (response.ret === 1) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Item posted',
+                            text: response.msg,
+                            showConfirmButton: true,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            allowOutsideClick: false
+                        }).then(function () {
+                            window.location.href = 'mylistings.php';
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.msg
+                        });
+                    }
+                    dzClosure.removeAllFiles();
+                    document.querySelector('.submit').disabled = false;
+                });
+                this.on("errormultiple", function (files, response) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response
+                    });
+                    dzClosure.removeAllFiles();
+                    document.querySelector('.submit').disabled = false;
+                });
+                this.on("processing", function () {
+                    document.querySelector('.submit').disabled = true;
+                });
+            }
+        }
+    </script>
+    </body>
 <?php include_once("footer.php") ?>
