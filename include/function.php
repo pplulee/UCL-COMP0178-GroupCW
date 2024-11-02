@@ -61,5 +61,4 @@ function sendmail(string $to, string $subject, string $message): array
     }
     $mailDriver = getMailDriver();
     return $mailDriver->send($to, $subject, $message);
-
 }
