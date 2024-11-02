@@ -77,12 +77,17 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
                     </a>
                 </li>
                 <?php if ($_SESSION['logged_in'] === true): ?>
-                    <li class="nav-item">
-                        <a class="nav-link" href="seller_center.php">
-                            <span class="nav-link-title">
-                                <i class="fas fa-store"></i> Seller Center
-                            </span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="nav-link-title">
+                            <i class="fas fa-store"></i> Seller Centre
+                        </span>
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="create_auction.php">Post Item</a></li>
+                            <li><a class="dropdown-item" href="mylistings.php">My Listings</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="profile.php">

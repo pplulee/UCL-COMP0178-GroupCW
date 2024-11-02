@@ -21,7 +21,7 @@ final class Transaction extends AbstractMigration
     {
         $sql = <<<EOD
         CREATE TABLE IF NOT EXISTS `transaction`(
-            `transaction_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             `bid_id` INT NOT NULL,
             `user_id` INT NOT NULL,
             `auction_item_id` INT NOT NULL,
