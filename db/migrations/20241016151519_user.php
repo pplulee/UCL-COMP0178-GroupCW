@@ -22,7 +22,7 @@ final class User extends AbstractMigration
                     `username` VARCHAR(255) NOT NULL,
                     `email` VARCHAR(255) NOT NULL,
                     `password` VARCHAR(255) NOT NULL,
-                    `` ENUM('SELLER', 'BUYER', 'ADMIN') NOT NULL,
+                    `role` ENUM('SELLER', 'BUYER', 'ADMIN') NOT NULL,
                     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     `uuid` VARCHAR(36) NOT NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
