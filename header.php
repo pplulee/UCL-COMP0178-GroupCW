@@ -69,20 +69,34 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
         <a class="navbar-brand" href="/">Site Name</a>
         <div class="collapse navbar-collapse" id="navbar-menu">
             <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="browse.php">
+                        <span class="nav-link-title">
+                            <i class="fas fa-search"></i> Browse Items
+                        </span>
+                    </a>
+                </li>
                 <?php if ($_SESSION['logged_in'] === true): ?>
                     <li class="nav-item">
+                        <a class="nav-link" href="seller_center.php">
+                            <span class="nav-link-title">
+                                <i class="fas fa-store"></i> Seller Center
+                            </span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="profile.php">
-                        <span class="nav-link-title">
-                            <i class="fas fa-user"></i> My Profile
-                        </span>
+                            <span class="nav-link-title">
+                                <i class="fas fa-user"></i> My Profile
+                            </span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <?php if ($_SESSION['admin']): ?>
                             <a class="nav-link" href="/admin">
-                            <span class="nav-link-title">
-                                <i class="fas fa-gear"></i> Admin Panel
-                            </span>
+                                <span class="nav-link-title">
+                                    <i class="fas fa-gear"></i> Admin Panel
+                                </span>
                             </a>
                         <?php endif; ?>
                     </li>

@@ -94,7 +94,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
 }
 ?>
 
-    <title><?php echo env('app_name') ?> - Reset Password</title>
+    <title><?= env('app_name') ?> - Reset Password</title>
     <body class="d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">
