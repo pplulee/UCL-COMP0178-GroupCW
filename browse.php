@@ -1,10 +1,30 @@
 <?php
+
+use voku\helper\AntiXSS;
+
 include_once("header.php");
+$antiXss = new AntiXSS();
+$_GET = $antiXss->xss_clean($_GET);
 $selectedID = isset($_GET['category']) ? (int) $_GET['category'] : 0;
 $startPrice = isset($_GET['startPrice']) ? (float) $_GET['startPrice'] : null;
 $endPrice = isset($_GET['endPrice']) ? (float) $_GET['endPrice'] : null;
 $keyword = $_GET['keyword'] ?? "";
+global $conn;
+$stmt = $conn->prepare("SELECT * FROM AuctionItem WHERE status = 'active'");
+$stmt->execute();
+$items = $stmt->fetchAll();
+// TODO: Implement the search functionality
+
+// TODO: Recommendation based of watch list
 ?>
+    <style>
+        .carousel-inner img {
+            width: 100%;
+            height: auto;
+            max-height: 300px;
+            object-fit: cover;
+        }
+    </style>
     <title><?= env('app_name') ?> - Browse</title>
     <div class="page-wrapper">
         <div class="page-header d-print-none">
@@ -72,6 +92,66 @@ $keyword = $_GET['keyword'] ?? "";
                                    value="<?= $keyword ?>">
                         </div>
                     </div>
+                    <div class="col-9">
+                        <div class="row row-cards">
+                            <?php
+                            foreach ($items as $item) {
+                                // Fetch item images
+                                $stmt = $conn->prepare("SELECT `filename` FROM images WHERE auction_item_id = ?");
+                                $stmt->execute([$item['id']]);
+                                $images = $stmt->fetchAll();
+                                // TODO: how many people are watching this item
+                                $watchers = 0;
+                                ?>
+                                <div class="col-sm-12 col-lg-6">
+                                    <a href="view_item.php?id=<?= $item['id'] ?>" class="card card-sm" target="_blank">
+                                        <div id="carousel-captions-<?= $item['id'] ?>" class="carousel slide">
+                                            <div class="carousel-inner">
+                                                <?php
+                                                foreach ($images as $index => $image) {
+                                                    ?>
+                                                    <div class="carousel-item<?= $index === 0 ? " active" : "" ?>">
+                                                        <img class="d-block w-100" alt=""
+                                                             src="./data/<?= htmlspecialchars($image['filename']) ?>">
+                                                    </div>
+                                                    <?php
+                                                }
+                                                ?>
+                                            </div>
+                                            <button class="carousel-control-prev" type="button"
+                                                    data-bs-target="#carousel-captions-<?= $item['id'] ?>"
+                                                    data-bs-slide="prev">
+                                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Previous</span>
+                                            </button>
+                                            <button class="carousel-control-next" type="button"
+                                                    data-bs-target="#carousel-captions-<?= $item['id'] ?>"
+                                                    data-bs-slide="next">
+                                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Next</span>
+                                            </button>
+                                        </div>
+                                        <div class="card-header">
+                                            <h5 class="card-title"><?= htmlspecialchars($item['name']) ?></h5>
+                                            <div class="card-actions btn-actions d-flex align-items-center">
+                                                <?= $item['views'] ?> <i class="ti ti-eye"></i> &nbsp; <?= $watchers ?>
+                                                <i class="ti ti-heart"></i>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="card-text markdown"><?= htmlspecialchars($item['description']) ?></p>
+                                        </div>
+                                        <div class="card-footer">
+                                            <p class="card-text">Current Price:
+                                                £<?= htmlspecialchars($item['current_price']) ?></p>
+                                        </div>
+                                    </a>
+                                </div>
+                                <?php
+                            }
+                            ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -117,6 +197,15 @@ $keyword = $_GET['keyword'] ?? "";
         document.getElementById('keyword').addEventListener('input', function () {
             clearTimeout(timeout);
             timeout = setTimeout(updateURL, redirectTimeout);
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const markdownElements = document.querySelectorAll('.markdown');
+            markdownElements.forEach(element => {
+                element.innerHTML = marked.parse(element.textContent);
+            });
         });
     </script>
 

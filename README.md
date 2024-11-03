@@ -13,6 +13,8 @@
 - [ ] (Admin) View Users
 
 ## Auction
-- [ ] Post Items
+- [x] Post Items
 - [ ] Bid on Items
 - [ ] View Items
+- [ ] Search Items
+- [ ] Recommend based on views or watch list
