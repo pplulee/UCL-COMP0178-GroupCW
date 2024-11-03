@@ -57,6 +57,7 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
           crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <script src="https://fastly.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
@@ -116,31 +117,3 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
         <?php endif; ?>
     </div>
 </header>
-
-<!--<nav class="navbar navbar-expand-lg navbar-dark bg-dark">-->
-<!--    <ul class="navbar-nav align-middle">-->
-<!--        <li class="nav-item mx-1">-->
-<!--            <a class="nav-link" href="browse.php">Browse</a>-->
-<!--        </li>-->
-<!--        --><?php
-//        if (isset($_SESSION['account_type']) && $_SESSION['account_type'] == 'buyer') {
-//            echo('
-//	<li class="nav-item mx-1">
-//      <a class="nav-link" href="mybids.php">My Bids</a>
-//    </li>
-//	<li class="nav-item mx-1">
-//      <a class="nav-link" href="recommendations.php">Recommended</a>
-//    </li>');
-//        }
-//        if (isset($_SESSION['account_type']) && $_SESSION['account_type'] == 'seller') {
-//            echo('
-//	<li class="nav-item mx-1">
-//      <a class="nav-link" href="mylistings.php">My Listings</a>
-//    </li>
-//	<li class="nav-item ml-3">
-//      <a class="nav-link btn border-light" href="create_auction.php">+ Create auction</a>
-//    </li>');
-//        }
-//        ?>
-<!--    </ul>-->
-<!--</nav>-->
