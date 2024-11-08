@@ -68,6 +68,15 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     ]);
                     exit();
                 }
+                // Set watch if not already watching
+                $stmt = $conn->prepare("SELECT * FROM watch WHERE buyer_id = :buyer_id AND auction_item_id = :auction_item_id");
+                $stmt->execute(['buyer_id' => $_SESSION['user_id'], 'auction_item_id' => $_POST['item_id']]);
+                $watching = $stmt->fetch() !== false;
+                if (! $watching) {
+                    $stmt = $conn->prepare("INSERT INTO watch (buyer_id, auction_item_id) VALUES (:buyer_id, :auction_item_id)");
+                    $stmt->execute(['buyer_id' => $_SESSION['user_id'], 'auction_item_id' => $_POST['item_id']]);
+                }
+
                 // Set other bid to lost
                 $stmt = $conn->prepare("UPDATE bid SET status = 'lost' WHERE auction_item_id = :auction_item_id AND status = 'pending'");
                 $stmt->execute(['auction_item_id' => $_POST['item_id']]);
@@ -82,12 +91,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
                 $stmt = $conn->prepare("SELECT buyer_id FROM watch WHERE auction_item_id = :auction_item_id AND buyer_id != :user_id");
                 $stmt->execute(['auction_item_id' => $_POST['item_id']]);
                 $users = $stmt->fetchAll();
-                $auction_url = getBaseUrl() . "/view_item.php?id=" . $_POST['item_id'];
+                $auction_url = env('app_url') . "/view_item.php?id=" . $_POST['item_id'];
                 // Fetch item first image
                 $stmt = $conn->prepare("SELECT `filename` FROM images WHERE auction_item_id = ? LIMIT 1");
                 $stmt->execute([$item['id']]);
                 $image = $stmt->fetch();
-                $image_url = getBaseUrl() . "/data/" . $image['filename'];
+                $image_url = env('app_url') . "/data/" . $image['filename'];
                 foreach ($users as $watcher) {
                     $stmt = $conn->prepare("SELECT username, email FROM user WHERE id = :id");
                     $stmt->execute(['id' => $watcher['buyer_id']]);
@@ -121,18 +130,23 @@ switch ($_SERVER['REQUEST_METHOD']) {
         http_response_code(405);
         exit();
 }
+$item = null;
 if (isset($_GET['id'])) {
     $item_id = $_GET['id'];
     // Check item exists
     $stmt = $conn->prepare("SELECT * FROM AuctionItem WHERE id = :id");
     $stmt->execute(['id' => $item_id]);
     $item = $stmt->fetch();
-    if (! $item) {
-        $item = null;
-    } else {
+    $bids = [];
+    if ($item) {
         // Increment view count
         $stmt = $conn->prepare("UPDATE AuctionItem SET views = views + 1 WHERE id = :id");
         $stmt->execute(['id' => $item_id]);
+        // Fetch seller's username
+        $stmt = $conn->prepare("SELECT username FROM user WHERE id = :id");
+        $stmt->execute(['id' => $item['seller_id']]);
+        $seller = $stmt->fetch();
+        $seller_username = $seller['username'];
         // Fetch item images
         $stmt = $conn->prepare("SELECT `filename` FROM images WHERE auction_item_id = ?");
         $stmt->execute([$item['id']]);
@@ -141,9 +155,13 @@ if (isset($_GET['id'])) {
         $stmt = $conn->prepare("SELECT * FROM watch WHERE buyer_id = :user_id AND auction_item_id = :item_id");
         $stmt->execute(['user_id' => $_SESSION['user_id'], 'item_id' => $item_id]);
         $watching = $stmt->fetch() !== false;
+        $auction_ended = strtotime($item['end_date']) < time();
+
+        // Fetch bids
+        $stmt = $conn->prepare("SELECT b.bid_price, u.username, b.bid_time, b.status FROM bid b JOIN user u ON b.user_id = u.id WHERE b.auction_item_id = :item_id ORDER BY b.bid_time DESC");
+        $stmt->execute(['item_id' => $item_id]);
+        $bids = $stmt->fetchAll();
     }
-} else {
-    $item = null;
 }
 ?>
 <div class="container mt-5">
@@ -197,46 +215,111 @@ if (isset($_GET['id'])) {
                         <label class="form-label h1">Current Price</label>
                         <div class="display-6 fw-bold my-1">£<?= htmlspecialchars($item['current_price']) ?></div>
                     </div>
-                    <div class="mb-3 d-flex justify-content-between me-3">
-                        <div>
-                            <label class="form-label h3">Reserve Price</label>
-                            <div class="display-6 fw-bold my-1"><?= $item['reserve_price'] ? "£" . $item['reserve_price'] : "Not set" ?></div>
+                    <?php
+                    if ($auction_ended) {
+                        ?>
+                        <div class="mb-3 text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check"
+                                 width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="green" fill="none"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M5 12l5 5l10 -10"/>
+                            </svg>
+                            <div class="display-6 fw-bold my-1 text-success">Auction Ended</div>
                         </div>
-                        <div>
-                            <label class="form-label h3">Minimum bid</label>
-                            <div class="display-6 fw-bold my-1">
-                                £<?= htmlspecialchars($item['bid_increment'] + $item['current_price']) ?></div>
+                        <?php
+                    } else {
+                        ?>
+                        <div class="mb-3 d-flex justify-content-between me-3">
+                            <div>
+                                <label class="form-label h3">Reserve Price</label>
+                                <div class="display-6 fw-bold my-1"><?= $item['reserve_price'] ? "£" . $item['reserve_price'] : "Not set" ?></div>
+                            </div>
+                            <div>
+                                <label class="form-label h3">Minimum bid</label>
+                                <div class="display-6 fw-bold my-1">
+                                    £<?= htmlspecialchars($item['bid_increment'] + $item['current_price']) ?></div>
+                            </div>
                         </div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bid ends at</label>
+                            <div class="display-6 fw-bold my-1 countdown text-danger"
+                                 data-end="<?= htmlspecialchars($item['end_date']) ?>"></div>
+                            <small class="text-muted">Hurry up! Place your bid before time runs out.</small>
+                        </div>
+                    <?php } ?>
+
                     <div class="mb-3">
-                        <label class="form-label">Bid ends at</label>
-                        <div class="display-6 fw-bold my-1 countdown text-danger"
-                             data-end="<?= htmlspecialchars($item['end_date']) ?>"></div>
-                        <small class="text-muted">Hurry up! Place your bid before time runs out.</small>
+                        <label class="form-label h3 text-muted">Seller</label>
+                        <div class="display-6 fw-bold my-1 text-primary"><?= htmlspecialchars($seller_username) ?></div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Your Bid</label>
-                        <div class="input-group">
-                            <span class="input-group-text">£</span>
-                            <input type="number" class="form-control" name="bid_amount">
-                        </div>
-                        <button type="button" class="btn btn-purple w-100 mt-3"
-                                hx-post="view_item.php"
-                                hx-trigger="click"
-                                hx-swap="none"
-                                hx-disable-elt="button"
-                                hx-vals='js:{
+
+                    <?php
+                    if (! $auction_ended) {
+                        ?>
+                        <div class="mb-3">
+                            <label class="form-label">Your Bid</label>
+                            <div class="input-group">
+                                <span class="input-group-text">£</span>
+                                <input type="number" class="form-control" name="bid_amount">
+                            </div>
+                            <button type="button" class="btn btn-purple w-100 mt-3"
+                                    hx-post="view_item.php"
+                                    hx-trigger="click"
+                                    hx-swap="none"
+                                    hx-disable-elt="button"
+                                    hx-vals='js:{
                                         action: "bid",
                                         item_id: <?= $item_id ?>,
                                         bid_amount: document.querySelector("[name=bid_amount]").value,
                                     }'>
-                            Place Bid
-                        </button>
-                    </div>
+                                Place Bid
+                            </button>
+                        </div>
+                    <?php } ?>
                 </div>
             </div>
             <div class="card-footer">
                 <p class="card-text markdown"><?= htmlspecialchars($item['description']) ?></p>
+            </div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="mb-0">Bid List</h2>
+            </div>
+            <div class="card-body">
+                <?php if (! empty($bids)): ?>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col">Bidder</th>
+                            <th scope="col">Bid Amount</th>
+                            <th scope="col">Bid Time</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($bids as $bid): ?>
+                            <tr>
+                                <td><?= htmlspecialchars(substr($bid['username'], 0, 1) . str_repeat('*', strlen($bid['username']) - 2) . substr($bid['username'], -1)) ?></td>
+                                <td>£<?= htmlspecialchars($bid['bid_price']) ?></td>
+                                <td><?= htmlspecialchars($bid['bid_time']) ?></td>
+                                <td>
+                                    <?php if ($bid['status'] === 'pending'): ?>
+                                        <i class="fas fa-clock text-warning"></i>
+                                    <?php elseif ($bid['status'] === 'won'): ?>
+                                        <i class="fas fa-check text-success"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-times text-danger"></i>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p class="text-muted">No bids yet.</p>
+                <?php endif; ?>
             </div>
         </div>
     <?php else: ?>

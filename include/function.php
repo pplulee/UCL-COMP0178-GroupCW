@@ -35,11 +35,6 @@ function validate(array $data, array $rules, array $messages): array
     }
 }
 
-function getBaseUrl(): string
-{
-    return (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
-}
-
 function getMailDriver(): NullMail|Postal|Smtp
 {
     $mailDriver = env('email_driver');

@@ -2,6 +2,7 @@
 $_ENV["debug"] = true;
 
 $_ENV["app_name"] = "Auction";
+$_ENV["app_url"] = "http://localhost:8000";
 
 // Database
 $_ENV["db_host"] = "localhost";
