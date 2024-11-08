@@ -68,6 +68,14 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     ]);
                     exit();
                 }
+                // Seller self cannot bid
+                if ($item['seller_id'] === $_SESSION['user_id']) {
+                    echo json_encode([
+                        'ret' => 0,
+                        'msg' => 'You cannot bid on your own item'
+                    ]);
+                    exit();
+                }
                 // Set watch if not already watching
                 $stmt = $conn->prepare("SELECT * FROM watch WHERE buyer_id = :buyer_id AND auction_item_id = :auction_item_id");
                 $stmt->execute(['buyer_id' => $_SESSION['user_id'], 'auction_item_id' => $_POST['item_id']]);
@@ -147,6 +155,12 @@ if (isset($_GET['id'])) {
         $stmt->execute(['id' => $item['seller_id']]);
         $seller = $stmt->fetch();
         $seller_username = $seller['username'];
+        // Fetch seller's rating and total reviews
+        $stmt = $conn->prepare("SELECT COUNT(*) as total, AVG(rating) as rating FROM review WHERE reviewee_id = :id");
+        $stmt->execute(['id' => $item['seller_id']]);
+        $seller_result = $stmt->fetch();
+        $seller_rating = $seller_result['rating'] ?? 0;
+        $seller_total = $seller_result['total'];
         // Fetch item images
         $stmt = $conn->prepare("SELECT `filename` FROM images WHERE auction_item_id = ?");
         $stmt->execute([$item['id']]);
@@ -156,7 +170,6 @@ if (isset($_GET['id'])) {
         $stmt->execute(['user_id' => $_SESSION['user_id'], 'item_id' => $item_id]);
         $watching = $stmt->fetch() !== false;
         $auction_ended = strtotime($item['end_date']) < time();
-
         // Fetch bids
         $stmt = $conn->prepare("SELECT b.bid_price, u.username, b.bid_time, b.status FROM bid b JOIN user u ON b.user_id = u.id WHERE b.auction_item_id = :item_id ORDER BY b.bid_time DESC");
         $stmt->execute(['item_id' => $item_id]);
@@ -164,6 +177,7 @@ if (isset($_GET['id'])) {
     }
 }
 ?>
+
 <div class="container mt-5">
     <?php if ($item !== null): ?>
         <title><?= env('app_name') ?> - <?= htmlspecialchars($item['name']) ?></title>
@@ -251,7 +265,25 @@ if (isset($_GET['id'])) {
 
                     <div class="mb-3">
                         <label class="form-label h3 text-muted">Seller</label>
-                        <div class="display-6 fw-bold my-1 text-primary"><?= htmlspecialchars($seller_username) ?></div>
+                        <div class="d-flex align-items-center">
+                            <div class="display-6 fw-bold my-1 text-primary me-2"><?= htmlspecialchars($seller_username) ?></div>
+                            <div class="d-flex align-items-center">
+                            <span class="gl-star-rating gl-star-rating--ltr">
+                                <?php
+                                for ($i = 1; $i <= 5; $i++) {
+                                    if ($i <= floor($seller_rating)) {
+                                        echo '<i class="fas fa-star text-warning"></i>';
+                                    } elseif ($i - 0.5 <= $seller_rating) {
+                                        echo '<i class="fas fa-star-half-alt text-warning"></i>';
+                                    } else {
+                                        echo '<i class="far fa-star text-warning"></i>';
+                                    }
+                                }
+                                echo " ($seller_total)";
+                                ?>
+                            </span>
+                            </div>
+                        </div>
                     </div>
 
                     <?php

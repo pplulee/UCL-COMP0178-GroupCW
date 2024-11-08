@@ -59,6 +59,9 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/countdown@2.6.0/countdown.min.js"></script>
+    <script src="assets/js/star-rating.min.js"></script>
+    <link rel="stylesheet" href="assets/css/star-rating.min.css">
+    <link rel="stylesheet" href="assets/css/tabler-vendors.min.css">
 </head>
 
 <body>
