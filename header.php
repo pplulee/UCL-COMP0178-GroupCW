@@ -58,6 +58,7 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
     <script src="https://fastly.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/countdown@2.6.0/countdown.min.js"></script>
 </head>
 
 <body>

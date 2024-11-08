@@ -142,8 +142,16 @@ $items = $stmt->fetchAll();
                                             <p class="card-text markdown"><?= htmlspecialchars($item['description']) ?></p>
                                         </div>
                                         <div class="card-footer">
-                                            <p class="card-text">Current Price:
-                                                £<?= htmlspecialchars($item['current_price']) ?></p>
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <span>Current Price:
+                                                        £<?= htmlspecialchars($item['current_price']) ?></span>
+                                                </div>
+                                                <div class="col-auto ms-auto">
+                                                    <span>Ends at: </span><span class="countdown"
+                                                                                data-end="<?= htmlspecialchars($item['end_date']) ?>"></span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </a>
                                 </div>
@@ -205,6 +213,16 @@ $items = $stmt->fetchAll();
             const markdownElements = document.querySelectorAll('.markdown');
             markdownElements.forEach(element => {
                 element.innerHTML = marked.parse(element.textContent);
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const countdownElements = document.querySelectorAll('.countdown');
+            countdownElements.forEach(element => {
+                const endDate = new Date(element.getAttribute('data-end'));
+                countdown(endDate, ts => {
+                    element.textContent = `${ts.days}d ${ts.hours}h ${ts.minutes}m ${ts.seconds}s`.replace(/\b0[dhms]\b/g, '');
+                });
             });
         });
     </script>

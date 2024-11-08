@@ -21,12 +21,12 @@ final class Bid extends AbstractMigration
     {
         $sql = <<< EOD
         CREATE TABLE IF NOT EXISTS `bid`(
-            `bid_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             `user_id` INT NOT NULL,
             `auction_item_id` INT NOT NULL,
             `bid_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `bid_price` DECIMAL(10, 2) NOT NULL,
-            `bid_status` ENUM('active', 'closed', 'cancelled'),
+            `bid_status` ENUM('pending', 'won', 'lost') NOT NULL DEFAULT 'pending'
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         EOD;
 
