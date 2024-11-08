@@ -21,7 +21,7 @@ final class AuctionItem extends AbstractMigration
             `bid_increment` DECIMAL(10, 2) DEFAULT 1.00,
             `start_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `end_date` DATETIME NOT NULL,
-            `status` ENUM('active', 'closed', 'cancelled'),
+            `status` ENUM('active', 'closed', 'cancelled') NOT NULL DEFAULT 'active'
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         EOD;
 
