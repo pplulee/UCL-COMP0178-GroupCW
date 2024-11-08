@@ -26,7 +26,7 @@ final class Bid extends AbstractMigration
             `auction_item_id` INT NOT NULL,
             `bid_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `bid_price` DECIMAL(10, 2) NOT NULL,
-            `bid_status` ENUM('pending', 'won', 'lost') NOT NULL DEFAULT 'pending'
+            `status` ENUM('pending', 'won', 'lost') NOT NULL DEFAULT 'pending'
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         EOD;
 

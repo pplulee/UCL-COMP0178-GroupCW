@@ -35,6 +35,11 @@ function validate(array $data, array $rules, array $messages): array
     }
 }
 
+function getBaseUrl(): string
+{
+    return (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+}
+
 function getMailDriver(): NullMail|Postal|Smtp
 {
     $mailDriver = env('email_driver');
@@ -45,7 +50,7 @@ function getMailDriver(): NullMail|Postal|Smtp
     };
 }
 
-function sendmail(string $to, string $subject, string $message): array
+function sendmail(string $to, string $subject, string $template, array $variables): array
 {
     if (empty($to)) {
         return [
@@ -59,6 +64,20 @@ function sendmail(string $to, string $subject, string $message): array
             'ret' => 0
         ];
     }
+
+    $templatePath = __DIR__ . '/../templates/emails/' . $template . '.html';
+    if (! file_exists($templatePath)) {
+        return [
+            'msg' => 'Email template not found',
+            'ret' => 0
+        ];
+    }
+
+    $message = file_get_contents($templatePath);
+    foreach ($variables as $key => $value) {
+        $message = str_replace("{%$key%}", $value, $message);
+    }
+
     $mailDriver = getMailDriver();
     return $mailDriver->send($to, $subject, $message);
 }

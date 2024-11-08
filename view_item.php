@@ -77,7 +77,36 @@ switch ($_SERVER['REQUEST_METHOD']) {
                 // Update current price
                 $stmt = $conn->prepare("UPDATE AuctionItem SET current_price = :current_price WHERE id = :id");
                 $stmt->execute(['current_price' => $_POST['bid_amount'], 'id' => $_POST['item_id']]);
-                // TODO: Notify watchers
+
+                // Notify watchers
+                $stmt = $conn->prepare("SELECT buyer_id FROM watch WHERE auction_item_id = :auction_item_id AND buyer_id != :user_id");
+                $stmt->execute(['auction_item_id' => $_POST['item_id']]);
+                $users = $stmt->fetchAll();
+                $auction_url = getBaseUrl() . "/view_item.php?id=" . $_POST['item_id'];
+                // Fetch item first image
+                $stmt = $conn->prepare("SELECT `filename` FROM images WHERE auction_item_id = ? LIMIT 1");
+                $stmt->execute([$item['id']]);
+                $image = $stmt->fetch();
+                $image_url = getBaseUrl() . "/data/" . $image['filename'];
+                foreach ($users as $watcher) {
+                    $stmt = $conn->prepare("SELECT username, email FROM user WHERE id = :id");
+                    $stmt->execute(['id' => $watcher['buyer_id']]);
+                    $watcher = $stmt->fetch();
+                    // Insert into email queue
+                    $stmt = $conn->prepare("INSERT INTO email_queue (recipient, subject, template, params) VALUES (:recipient, :subject, :template, :params)");
+                    $stmt->execute([
+                        'recipient' => $watcher['email'],
+                        'subject' => 'New bid on ' . $item['name'],
+                        'template' => 'watch_update',
+                        'params' => json_encode([
+                            'auction_url' => $auction_url,
+                            'username' => $watcher['username'],
+                            'item_name' => $item['name'],
+                            'price' => $_POST['bid_amount'],
+                            'image_url' => $image_url
+                        ])
+                    ]);
+                }
                 header('HX-Refresh: true');
                 echo json_encode([
                     'ret' => 1,

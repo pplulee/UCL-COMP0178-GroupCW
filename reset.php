@@ -74,9 +74,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     }
                     $token = bin2hex(random_bytes(8));
                     $cache->set('reset_' . $token, $user['id'], 3600);
-                    $template = file_get_contents('templates/emails/code.html');
-                    $output = str_replace('{%code%}', $token, $template);
-                    echo json_encode(sendmail($email, 'Reset Password', $output));
+                    $result = sendmail($email, 'Reset Password', 'code', ['code' => $token]);
+                    echo json_encode($result);
                     exit();
                 default:
                     echo json_encode(['ret' => 0, 'msg' => 'Invalid action']);

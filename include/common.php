@@ -4,9 +4,11 @@ use Phpfastcache\Helper\Psr16Adapter;
 use voku\helper\AntiXSS;
 
 header('Content-Type: text/html; charset=UTF-8');
-include_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
-include_once($_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php');
-include_once("function.php");
+$basePath = dirname(__DIR__);
+
+include_once($basePath . '/config.php');
+include_once($basePath . '/vendor/autoload.php');
+include_once($basePath . '/include/function.php');
 
 //Enable error reporting
 if (env("debug", false)) {
@@ -15,7 +17,7 @@ if (env("debug", false)) {
 }
 
 //Initialize session
-if (session_status() === PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     session_start();
 }
 if (! (isset($_SESSION["logged_in"]))) {
