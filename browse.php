@@ -15,7 +15,91 @@ $stmt->execute();
 $items = $stmt->fetchAll();
 // TODO: Implement the search functionality
 
+$sql = "SELECT * FROM AuctionItem WHERE status = 'active'";
+
+// Add filters based on user input
+$conditions = [];
+$params = [];
+$types = "";
+
+// Category filter
+if ($selectedID > 0) {
+    $conditions[] = "category_id = ?";
+    $params[] = $selectedID;
+    $types .= "i";
+}
+
+// Price range filters
+if ($startPrice !== null) {
+    $conditions[] = "current_price >= ?";
+    $params[] = $startPrice;
+    $types .= "d"; // 'd' for float
+}
+if ($endPrice !== null) {
+    $conditions[] = "current_price <= ?";
+    $params[] = $endPrice;
+    $types .= "d"; // 'd' for float
+}
+
+// Keyword filter
+if (!empty($keyword)) {
+    $conditions[] = "(name LIKE ? OR description LIKE ?)";
+    $keywordParam = "%" . $keyword . "%";
+    $params[] = $keywordParam;
+    $params[] = $keywordParam;
+    $types .= "ss"; // 's' for string
+}
+
+// Add conditions to the query if they exist
+if (count($conditions) > 0) {
+    $sql .= " AND " . implode(" AND ", $conditions);
+}
+
+$stmt = $conn->prepare($sql);
+
+// Bind parameters dynamically
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$items = $stmt->get_result()->fetchAll();
+
 // TODO: Recommendation based of watch list
+
+// Get the logged-in user's watch list
+$watchlistSQL = "SELECT auction_item_id FROM watchlist WHERE user_id = ?";
+$watchlistStmt = $conn->prepare($watchlistSQL);
+$watchlistStmt->bind_param("i", $_SESSION['user_id']);
+$watchlistStmt->execute();
+$watchlistItems = $watchlistStmt->get_result()->fetchAll(PDO::FETCH_COLUMN);
+
+// If there are watchlist items, recommend similar ones
+$recommendations = [];
+if (count($watchlistItems) > 0) {
+    // Fetch similar items based on categories of watched items
+    $placeholders = implode(",", array_fill(0, count($watchlistItems), "?"));
+    $recommendSQL = "SELECT * FROM AuctionItem WHERE status = 'active' AND id NOT IN ($placeholders) AND category_id IN (
+                        SELECT DISTINCT category_id FROM AuctionItem WHERE id IN ($placeholders)
+                    ) LIMIT 5";
+    $recommendStmt = $conn->prepare($recommendSQL);
+    $recommendParams = array_merge($watchlistItems, $watchlistItems);
+    $recommendStmt->execute($recommendParams);
+    $recommendations = $recommendStmt->fetchAll();
+}
+
+// Display recommended items
+if (!empty($recommendations)) {
+    echo "<div class='recommendations'>";
+    echo "<h3>Recommended for You</h3>";
+    foreach ($recommendations as $recItem) {
+        // Display code similar to how you display listings
+        echo "<div class='recommendation-item'>";
+        echo "<h4><a href='view_item.php?id={$recItem['id']}'>{$recItem['name']}</a></h4>";
+        echo "<p>" . htmlspecialchars($recItem['description']) . "</p>";
+        echo "</div>";
+    }
+    echo "</div>";
+}
 ?>
     <style>
         .carousel-inner img {
