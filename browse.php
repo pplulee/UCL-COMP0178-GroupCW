@@ -10,9 +10,10 @@ $startPrice = isset($_GET['startPrice']) ? (float) $_GET['startPrice'] : null;
 $endPrice = isset($_GET['endPrice']) ? (float) $_GET['endPrice'] : null;
 $keyword = $_GET['keyword'] ?? "";
 global $conn;
-$stmt = $conn->prepare("SELECT * FROM AuctionItem WHERE status = 'active'");
+$stmt = $conn->prepare($query = "SELECT * FROM AuctionItem WHERE status = 'active'");
 $stmt->execute();
 $items = $stmt->fetchAll();
+
 // TODO: Implement the search functionality
 
 $sql = "SELECT * FROM AuctionItem WHERE status = 'active'";
@@ -63,6 +64,30 @@ if (!empty($params)) {
 }
 $stmt->execute();
 $items = $stmt->get_result()->fetchAll();
+
+if ($selectedID !== 0) {
+    $query .= " AND category_id = :category_id";
+    $params[':category_id'] = $selectedID;
+}
+
+if(isset($keyword)) {
+    $query .= " AND (Auction.itemName like 'keyword' OR Auction.details like 'keyword')";
+    $params[':keyword'] = '%' . $keyword . '%';
+}
+
+if (isset($startPrice)) {
+    $query .= " AND price >= :start_price";
+    $params[':start_price'] = $startPrice;
+}
+
+if (isset($endPrice)) {
+    $query .= " AND price <= :end_price";
+    $params[':end_price'] = $endPrice;
+}
+
+$stmt = $conn->prepare($query);
+$stmt->execute($params);
+$products = $stmt->fetchAll();
 
 // TODO: Recommendation based of watch list
 
