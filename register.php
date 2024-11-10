@@ -61,6 +61,10 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                    placeholder="Please repeat the password" required type="password">
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label"><i class="fas fa-map-marker-alt"></i> Address</label>
+                        <textarea class="form-control" id="address" placeholder="Please enter your address" required></textarea>
+                    </div>
                     <div class="form-footer">
                         <button class="btn btn-primary w-100"
                                 hx-post="register.php"
@@ -71,6 +75,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                 email: document.getElementById("email").value,
                                 password: document.getElementById("password").value,
                                 confirm_password: document.getElementById("confirm_password").value,
+                                address: document.getElementById("address").value
                             }'>
                             Register
                         </button>

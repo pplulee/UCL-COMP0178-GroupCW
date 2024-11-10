@@ -14,6 +14,7 @@ class User
     public string $uuid;
     public bool $admin;
     private string $password;
+    public string $address;
 
     public function __construct()
     {
@@ -23,6 +24,7 @@ class User
         $this->password = '';
         $this->uuid = '';
         $this->admin = false;
+        $this->address = '';
     }
 
     public function register(array $data): array
@@ -35,6 +37,7 @@ class User
             'email' => 'required|email',
             'password' => 'required|min:6',
             'confirm_password' => 'required|same:password',
+            'address' => 'required'
         ], [
             'username:required' => 'Username is required',
             'username:min' => 'Username must be at least 6 characters',
@@ -45,6 +48,7 @@ class User
             'password:min' => 'Password must be at least 6 characters',
             'confirm_password:required' => 'Confirm password is required',
             'confirm_password:same' => 'Passwords do not match',
+            'address:required' => 'Address is required'
         ]);
         if ($result['ret'] === 0) {
             echo json_encode($result);
@@ -54,6 +58,7 @@ class User
         $this->email = $data['email'];
         $this->password = password_hash($data['password'], getPasswordMethod());
         $this->uuid = Uuid::uuid4()->toString();
+        $this->address = htmlspecialchars($data['address']);
         global $conn;
         // Check if the user already exists
         $stmt = $conn->prepare('SELECT * FROM user WHERE username = :username OR email = :email');
@@ -68,13 +73,14 @@ class User
                 'msg' => 'User already exists'
             ];
         }
-        $stmt = $conn->prepare('INSERT INTO user (username, email, password, uuid, created_at) VALUES (:username, :email, :password, :uuid, :created_at)');
+        $stmt = $conn->prepare('INSERT INTO user (username, email, password, uuid, created_at, address) VALUES (:username, :email, :password, :uuid, :created_at, :address)');
         $stmt->execute([
             'username' => $this->username,
             'email' => $this->email,
             'password' => $this->password,
             'uuid' => $this->uuid,
-            'created_at' => date('Y-m-d H:i:s')
+            'created_at' => date('Y-m-d H:i:s'),
+            'address' => $this->address
         ]);
         return [
             'ret' => 1,

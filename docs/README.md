@@ -15,11 +15,11 @@
 - [x] Post Items
 - [x] Bid on Items
 - [x] View Items
-- [ ] Search Items
-- [ ] Recommend based on views or watch list
+- [x] Search Items
+- [x] Recommend based on views or watch list
 - [ ] Watch List
-- [ ] List of bids
-- [ ] List of items posted
+- [x] List of bids
+- [x] List of items posted
 
 ## Email Notification
 - [x] Reset Password

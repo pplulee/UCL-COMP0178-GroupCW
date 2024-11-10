@@ -89,6 +89,17 @@ function auction_end_update(): void
                     'image_url' => $image_url
                 ])
             ]);
+            // Create transaction
+            $stmt = $conn->prepare("INSERT INTO transaction (bid_id, buyer_id, seller_id, auction_item_id, price, payment_method, status) VALUES (:bid_id, :buyer_id, :seller_id, :auction_item_id, :price, :payment_method, :status)");
+            $stmt->execute([
+                'bid_id' => $bid['id'],
+                'buyer_id' => $bid['user_id'],
+                'seller_id' => $auction['seller_id'],
+                'auction_item_id' => $auction['id'],
+                'price' => $bid['bid_price'],
+                'payment_method' => 'Dummy Payment',
+                'status' => 'pending_payment'
+            ]);
         } else {
             // No bids
             $stmt = $conn->prepare("SELECT username, email FROM user WHERE id = :id");
