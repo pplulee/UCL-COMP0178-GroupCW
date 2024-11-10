@@ -17,9 +17,13 @@
 - [x] View Items
 - [x] Search Items
 - [x] Recommend based on views or watch list
-- [ ] Watch List
+- [x] Watch List
 - [x] List of bids
 - [x] List of items posted
+- [ ] My bids
+
+## Transaction
+- [ ] Basic operations for seller and buyer
 
 ## Email Notification
 - [x] Reset Password

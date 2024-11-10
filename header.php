@@ -82,6 +82,13 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
                     </a>
                 </li>
                 <?php if ($_SESSION['logged_in'] === true): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="watchlist.php">
+                            <span class="nav-link-title">
+                                <i class="fas fa-eye"></i> Watch List
+                            </span>
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
@@ -100,15 +107,6 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
                                 <i class="fas fa-user"></i> My Profile
                             </span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <?php if ($_SESSION['admin']): ?>
-                            <a class="nav-link" href="/admin">
-                                <span class="nav-link-title">
-                                    <i class="fas fa-gear"></i> Admin Panel
-                                </span>
-                            </a>
-                        <?php endif; ?>
                     </li>
                 <?php endif; ?>
             </ul>

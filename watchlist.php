@@ -9,7 +9,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $id = $_POST['id'] ?? null;
         if (! $action || ! $id) {
             http_response_code(400);
-            echo json_encode(['ret' => 0, 'msg' => 'Missing parameters']);
+            echo json_encode(['error' => 'Missing required fields']);
             exit();
         }
         switch ($action) {
@@ -40,20 +40,13 @@ switch ($_SERVER['REQUEST_METHOD']) {
         http_response_code(405);
         exit();
 }
-$status = $_GET['status'] ?? "%";
-$stmt = $conn->prepare("
-        SELECT id, name, description, current_price, end_date, status, views, start_date
-        FROM AuctionItem 
-        WHERE seller_id = :seller_id AND status LIKE :status
-        ORDER BY end_date DESC
-        ");
+$stmt = $conn->prepare("SELECT a.id, a.name, a.current_price, a.end_date, a.status, a.views FROM AuctionItem a JOIN watch w ON a.id = w.auction_item_id WHERE w.buyer_id = :buyer_id ORDER BY a.end_date DESC");
 $stmt->execute([
-    'seller_id' => $_SESSION['user_id'],
-    'status' => $status
+    'buyer_id' => $_SESSION['user_id']
 ]);
 $items = $stmt->fetchAll();
 ?>
-    <title><?= env('app_name') ?> - My Listings</title>
+    <title><?= env('app_name') ?> - Watchlist</title>
     <body>
     <div class="page-wrapper">
         <div class="page-header">
@@ -61,14 +54,8 @@ $items = $stmt->fetchAll();
                 <div class="row g-2 align-items-center">
                     <div class="col">
                         <h2 class="page-title">
-                            My Listings
+                            My Watchlist
                         </h2>
-                    </div>
-                    <div class="col-auto ms-auto d-print-none">
-                        <a href="create_auction.php" class="btn btn-primary">
-                            <i class="fa-solid fa-plus"></i>
-                            Post an Item
-                        </a>
                     </div>
                 </div>
             </div>
@@ -78,8 +65,10 @@ $items = $stmt->fetchAll();
                 <div class="row row-cards">
                     <div class="space-y">
                         <?php if (empty($items)): ?>
-                            <p class='text-muted'>You have no active listings at the moment. <a
-                                        href='create_auction.php'>Create a new listing</a> to get started!</p>
+                            <p class='text-muted'>You have no items in your watchlist. Visit the
+                                <a href='browse.php'>browse</a>
+                                page to find items to watch.
+                            </p>
                         <?php else: ?>
                             <?php foreach ($items as $item): ?>
                                 <?php
@@ -132,10 +121,6 @@ $items = $stmt->fetchAll();
                                                                 <?= $bids ?> <i class="ti ti-gavel"></i>
                                                             </div>
                                                             <div class="list-inline-item">
-                                                                Posted
-                                                                at <?= date("F j, Y, g:i a", strtotime($item['start_date'])) ?>
-                                                            </div>
-                                                            <div class="list-inline-item">
                                                                 Ends
                                                                 at <?= date("F j, Y, g:i a", strtotime($item['end_date'])) ?>
                                                             </div>
@@ -167,24 +152,22 @@ $items = $stmt->fetchAll();
                                                         <span class="badge <?= $badgeClass ?>"><?= $badgeText ?></span>
                                                     </div>
                                                 </div>
+                                                <div class="row mt-3">
+                                                    <div class="col">
+                                                        <button class="btn btn-warning"
+                                                                hx-post="view_item.php"
+                                                                hx-disable-elt="this"
+                                                                hx-confirm="Are you sure you want to unwatch this item?"
+                                                                hx-vals="js:{
+                                                                    action: 'unwatch',
+                                                                    item_id: <?= $item['id'] ?>
+                                                                }"
+                                                        >
+                                                            Unwatch
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer">
-                                        <div class="d-flex">
-                                            <?php if ($item['status'] == 'active'): ?>
-                                                <button class="btn btn-danger ms-auto"
-                                                        hx-post="mylistings.php"
-                                                        hx-disable-elt="this"
-                                                        hx-confirm="Are you sure you want to close this listing?"
-                                                        hx-vals="js:{
-                                                        action: 'cancel',
-                                                        id: <?= $item['id'] ?>
-                                                        }"
-                                                >
-                                                    Cancel Listing
-                                                </button>
-                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
