@@ -65,6 +65,8 @@ if (!empty($params)) {
 $stmt->execute();
 $items = $stmt->get_result()->fetchAll();
 
+$query = "SELECT * FROM AuctionItem WHERE status = 'active'";
+
 if ($selectedID !== 0) {
     $query .= " AND category_id = :category_id";
     $params[':category_id'] = $selectedID;
