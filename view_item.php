@@ -169,7 +169,7 @@ if (isset($_GET['id'])) {
         $stmt = $conn->prepare("SELECT * FROM watch WHERE buyer_id = :user_id AND auction_item_id = :item_id");
         $stmt->execute(['user_id' => $_SESSION['user_id'], 'item_id' => $item_id]);
         $watching = $stmt->fetch() !== false;
-        $auction_ended = strtotime($item['end_date']) < time();
+        $auction_ended = strtotime($item['end_date']) < time() || in_array($item['status'], ['closed', 'cancelled']);
         // Fetch bids
         $stmt = $conn->prepare("SELECT b.bid_price, u.username, b.bid_time, b.status FROM bid b JOIN user u ON b.user_id = u.id WHERE b.auction_item_id = :item_id ORDER BY b.bid_time DESC");
         $stmt->execute(['item_id' => $item_id]);
@@ -183,7 +183,32 @@ if (isset($_GET['id'])) {
         <title><?= env('app_name') ?> - <?= htmlspecialchars($item['name']) ?></title>
         <div class="card">
             <div class="card-header">
-                <h2 class="mb-0"><?= htmlspecialchars($item['name']) ?></h2>
+                <h2 class="mb-0">
+                    <?= strlen($item['name']) > 150 ? substr($item['name'], 0, 150) . "..." : $item['name'] ?>
+                    <?php
+                    $badgeClass = '';
+                    $badgeText = '';
+
+                    switch ($item['status']) {
+                        case 'active':
+                            $badgeClass = 'bg-green text-green-fg';
+                            $badgeText = 'Active';
+                            break;
+                        case 'closed':
+                            $badgeClass = 'bg-red text-red-fg';
+                            $badgeText = 'Closed';
+                            break;
+                        case 'cancelled':
+                            $badgeClass = 'bg-orange text-orange-fg';
+                            $badgeText = 'Cancelled';
+                            break;
+                        default:
+                            $badgeClass = 'bg-gray text-gray-fg';
+                            $badgeText = 'Unknown';
+                    }
+                    ?>
+                    <span class="badge <?= $badgeClass ?>"><?= $badgeText ?></span>
+                </h2>
                 <div class="card-actions ms-auto">
                     <?php if ($watching): ?>
                         <button class="btn btn-danger d-flex align-items-center"
