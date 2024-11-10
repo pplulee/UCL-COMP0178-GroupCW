@@ -2,6 +2,23 @@
 if (php_sapi_name() !== 'cli') {
     die('This script can only be run from the command line.');
 }
+
+$lockFile = __DIR__ . '/.cronlock';
+
+if (file_exists($lockFile)) {
+    die('Cron job is already running.');
+}
+
+// Create the lock file
+file_put_contents($lockFile, '');
+
+// Register a shutdown function to remove the lock file
+register_shutdown_function(function () use ($lockFile) {
+    if (file_exists($lockFile)) {
+        unlink($lockFile);
+    }
+});
+
 include_once "include/common.php";
 
 function email_queue_process(): void
@@ -125,3 +142,4 @@ function auction_end_update(): void
 
 auction_end_update();
 email_queue_process();
+echo "Cron job completed successfully.\n";
