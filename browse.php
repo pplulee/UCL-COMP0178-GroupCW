@@ -9,124 +9,62 @@ $selectedID = isset($_GET['category']) ? (int) $_GET['category'] : 0;
 $startPrice = isset($_GET['startPrice']) ? (float) $_GET['startPrice'] : null;
 $endPrice = isset($_GET['endPrice']) ? (float) $_GET['endPrice'] : null;
 $keyword = $_GET['keyword'] ?? "";
+$recommend = isset($_GET['recommend']) && $_GET['recommend'] === 'true';
+$watchListEmpty = false;
 global $conn;
-$stmt = $conn->prepare($query = "SELECT * FROM AuctionItem WHERE status = 'active'");
-$stmt->execute();
-$items = $stmt->fetchAll();
 
-// TODO: Implement the search functionality
-
-$sql = "SELECT * FROM AuctionItem WHERE status = 'active'";
-
-// Add filters based on user input
-$conditions = [];
+$query = "SELECT id, name, current_price, end_date, views  FROM AuctionItem WHERE status = 'active'";
 $params = [];
-$types = "";
 
-// Category filter
-if ($selectedID > 0) {
-    $conditions[] = "category_id = ?";
-    $params[] = $selectedID;
-    $types .= "i";
-}
+// Recommendation
+if ($recommend === true) {
+    $watchlistSQL = $conn->prepare("SELECT DISTINCT AuctionItem.category_id as id FROM watch JOIN AuctionItem ON watch.auction_item_id = AuctionItem.id WHERE watch.buyer_id = ?");
+    $watchlistSQL->execute([$_SESSION['user_id']]);
+    $watchlistItems = $watchlistSQL->fetchAll();
+    $watchlistItems = array_column($watchlistItems, 'id');
 
-// Price range filters
-if ($startPrice !== null) {
-    $conditions[] = "current_price >= ?";
-    $params[] = $startPrice;
-    $types .= "d"; // 'd' for float
-}
-if ($endPrice !== null) {
-    $conditions[] = "current_price <= ?";
-    $params[] = $endPrice;
-    $types .= "d"; // 'd' for float
-}
-
-// Keyword filter
-if (!empty($keyword)) {
-    $conditions[] = "(name LIKE ? OR description LIKE ?)";
-    $keywordParam = "%" . $keyword . "%";
-    $params[] = $keywordParam;
-    $params[] = $keywordParam;
-    $types .= "ss"; // 's' for string
-}
-
-// Add conditions to the query if they exist
-if (count($conditions) > 0) {
-    $sql .= " AND " . implode(" AND ", $conditions);
-}
-
-$stmt = $conn->prepare($sql);
-
-// Bind parameters dynamically
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$items = $stmt->get_result()->fetchAll();
-
-$query = "SELECT * FROM AuctionItem WHERE status = 'active'";
-
-if ($selectedID !== 0) {
+    if ($selectedID !== 0 && in_array($selectedID, $watchlistItems)) {
+        $query .= " AND category_id = :category_id";
+        $params[':category_id'] = $selectedID;
+    } elseif (! empty($watchlistItems) && $selectedID === 0) {
+        $query .= " AND category_id IN (" . implode(',', array_fill(0, count($watchlistItems), '?')) . ")";
+        $params = array_merge($params, $watchlistItems);
+    } else {
+        // empty watchlist
+        $query .= " AND 1=0";
+        $watchListEmpty = true;
+    }
+} elseif ($selectedID !== 0) {
     $query .= " AND category_id = :category_id";
     $params[':category_id'] = $selectedID;
 }
 
-if(isset($keyword)) {
-    $query .= " AND (Auction.itemName like 'keyword' OR Auction.details like 'keyword')";
-    $params[':keyword'] = '%' . $keyword . '%';
+if ($keyword !== "") {
+    // explode the keyword into individual words
+    $keywords = explode(' ', $keyword);
+    $keywordConditions = [];
+    foreach ($keywords as $index => $word) {
+        $paramName = ':keyword' . $index;
+        $keywordConditions[] = "name LIKE $paramName";
+        $params[$paramName] = '%' . $word . '%';
+    }
+    $query .= " AND (" . implode(' OR ', $keywordConditions) . ")";
 }
 
-if (isset($startPrice)) {
-    $query .= " AND price >= :start_price";
+if ($startPrice !== null) {
+    $query .= " AND current_price >= :start_price";
     $params[':start_price'] = $startPrice;
 }
 
-if (isset($endPrice)) {
-    $query .= " AND price <= :end_price";
+if ($endPrice !== null) {
+    $query .= " AND current_price <= :end_price";
     $params[':end_price'] = $endPrice;
 }
 
 $stmt = $conn->prepare($query);
 $stmt->execute($params);
-$products = $stmt->fetchAll();
+$items = $stmt->fetchAll();
 
-// TODO: Recommendation based of watch list
-
-// Get the logged-in user's watch list
-$watchlistSQL = "SELECT auction_item_id FROM watchlist WHERE user_id = ?";
-$watchlistStmt = $conn->prepare($watchlistSQL);
-$watchlistStmt->bind_param("i", $_SESSION['user_id']);
-$watchlistStmt->execute();
-$watchlistItems = $watchlistStmt->get_result()->fetchAll(PDO::FETCH_COLUMN);
-
-// If there are watchlist items, recommend similar ones
-$recommendations = [];
-if (count($watchlistItems) > 0) {
-    // Fetch similar items based on categories of watched items
-    $placeholders = implode(",", array_fill(0, count($watchlistItems), "?"));
-    $recommendSQL = "SELECT * FROM AuctionItem WHERE status = 'active' AND id NOT IN ($placeholders) AND category_id IN (
-                        SELECT DISTINCT category_id FROM AuctionItem WHERE id IN ($placeholders)
-                    ) LIMIT 5";
-    $recommendStmt = $conn->prepare($recommendSQL);
-    $recommendParams = array_merge($watchlistItems, $watchlistItems);
-    $recommendStmt->execute($recommendParams);
-    $recommendations = $recommendStmt->fetchAll();
-}
-
-// Display recommended items
-if (!empty($recommendations)) {
-    echo "<div class='recommendations'>";
-    echo "<h3>Recommended for You</h3>";
-    foreach ($recommendations as $recItem) {
-        // Display code similar to how you display listings
-        echo "<div class='recommendation-item'>";
-        echo "<h4><a href='view_item.php?id={$recItem['id']}'>{$recItem['name']}</a></h4>";
-        echo "<p>" . htmlspecialchars($recItem['description']) . "</p>";
-        echo "</div>";
-    }
-    echo "</div>";
-}
 ?>
     <style>
         .carousel-inner img {
@@ -140,11 +78,26 @@ if (!empty($recommendations)) {
     <div class="page-wrapper">
         <div class="page-header d-print-none">
             <div class="container-xl">
+                <?php if ($recommend): ?>
+                    <div class="alert alert-info" role="alert">
+                        Recommendations are based on the auction items you have watched.
+                    </div>
+                <?php endif; ?>
+                <?php if ($watchListEmpty): ?>
+                    <div class="alert alert-warning" role="alert">
+                        No items to recommend. Try adding more items to your watchlist.
+                    </div>
+                <?php endif; ?>
                 <div class="row g-2 align-items-center">
                     <div class="col">
                         <h2 class="page-title">
                             Browse Items
                         </h2>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="view-recommendations">
+                            View Recommendations
+                        </button>
                     </div>
                 </div>
             </div>
@@ -154,9 +107,9 @@ if (!empty($recommendations)) {
                 <div class="row g-4">
                     <div class="col-3">
                         <div class="subheader mb-2">Category</div>
-                        <div class="list-group list-group-transparent mb-3">
+                        <div class="list-group list-group-transparent mb-3" id="category-list">
                             <a class="list-group-item list-group-item-action d-flex align-items-center<?= $selectedID == 0 ? " active" : "" ?>"
-                               href="browse.php?category=0">
+                               href="javascript:void(0);" data-category="0">
                                 All
                             </a>
                             <?php
@@ -167,7 +120,7 @@ if (!empty($recommendations)) {
                                 $selected = ($selectedID == $row['id']) ? " active" : "";
                                 ?>
                                 <a class="list-group-item list-group-item-action d-flex align-items-center<?= $selected ?>"
-                                   href="browse.php?category=<?= $row['id'] ?>">
+                                   href="javascript:void(0);" data-category="<?= $row['id'] ?>">
                                     <?= htmlspecialchars($row['name']); ?>
                                 </a>
                                 <?php
@@ -202,6 +155,9 @@ if (!empty($recommendations)) {
                                    autocomplete="off"
                                    value="<?= $keyword ?>">
                         </div>
+                        <button class="btn btn-secondary mt-3 w-100" id="reset-filters"><i class="fas fa-sync-alt"></i>
+                            Reset
+                        </button>
                     </div>
                     <div class="col-9">
                         <div class="row row-cards">
@@ -211,8 +167,10 @@ if (!empty($recommendations)) {
                                 $stmt = $conn->prepare("SELECT `filename` FROM images WHERE auction_item_id = ?");
                                 $stmt->execute([$item['id']]);
                                 $images = $stmt->fetchAll();
-                                // TODO: how many people are watching this item
-                                $watchers = 0;
+                                // Fetch watchers count
+                                $stmt = $conn->prepare("SELECT COUNT(*) FROM watch WHERE auction_item_id = ?");
+                                $stmt->execute([$item['id']]);
+                                $watchers = $stmt->fetchColumn();
                                 ?>
                                 <div class="col-sm-12 col-lg-6">
                                     <a href="view_item.php?id=<?= $item['id'] ?>" class="card card-sm" target="_blank">
@@ -245,18 +203,24 @@ if (!empty($recommendations)) {
                                         <div class="card-header">
                                             <h5 class="card-title"><?= htmlspecialchars($item['name']) ?></h5>
                                             <div class="card-actions btn-actions d-flex align-items-center">
-                                                <?= $item['views'] ?> <i class="ti ti-eye"></i> &nbsp; <?= $watchers ?>
-                                                <i class="ti ti-heart"></i>
+                                                <?= $item['views'] ?> <i class="ti ti-eye"></i> &nbsp<?= $watchers ?> <i
+                                                        class="ti ti-heart"></i>
                                             </div>
                                         </div>
                                         <div class="card-body">
-                                            <p class="card-text markdown"><?= htmlspecialchars($item['description']) ?></p>
+                                            <h1 class="fw-bold text-primary">Current Price:
+                                                £<?= htmlspecialchars($item['current_price']) ?></h1>
                                         </div>
                                         <div class="card-footer">
                                             <div class="row align-items-center">
                                                 <div class="col-auto">
-                                                    <span>Current Price:
-                                                        £<?= htmlspecialchars($item['current_price']) ?></span>
+                                                    <?php
+                                                    // Fetch bid count in the last 24 hours
+                                                    $stmt = $conn->prepare("SELECT COUNT(*) FROM bid WHERE auction_item_id = ? AND bid_time >= NOW() - INTERVAL 1 DAY");
+                                                    $stmt->execute([$item['id']]);
+                                                    $bidCount = $stmt->fetchColumn();
+                                                    ?>
+                                                    <span class="fw-bold"><?= $bidCount ?> Bids in Last 24 Hours</span>
                                                 </div>
                                                 <div class="col-auto ms-auto">
                                                     <span>Ends at: </span><span class="countdown"
@@ -277,45 +241,69 @@ if (!empty($recommendations)) {
     </div>
 
     <script>
-        let timeout = null;
-        let redirectTimeout = 1000;
+        document.addEventListener("DOMContentLoaded", function () {
+            const viewRecommendationsButton = document.getElementById('view-recommendations');
+            const urlParams = new URLSearchParams(window.location.search);
+            const recommend = urlParams.get('recommend') === 'true';
 
-        function updateURL() {
-            const startPrice = document.getElementById('startPrice').value;
-            const endPrice = document.getElementById('endPrice').value;
-            const keyword = document.getElementById('keyword').value;
-            const url = new URL(window.location.href);
-            if (startPrice) {
-                url.searchParams.set('startPrice', startPrice);
-            } else {
-                url.searchParams.delete('startPrice');
+            if (recommend) {
+                viewRecommendationsButton.textContent = 'View All Items';
             }
-            if (endPrice) {
-                url.searchParams.set('endPrice', endPrice);
-            } else {
-                url.searchParams.delete('endPrice');
-            }
-            if (keyword) {
-                url.searchParams.set('keyword', keyword);
-            } else {
-                url.searchParams.delete('keyword');
-            }
-            window.location.href = url.toString();
-        }
 
-        document.getElementById('startPrice').addEventListener('input', function () {
-            clearTimeout(timeout);
-            timeout = setTimeout(updateURL, redirectTimeout);
+            viewRecommendationsButton.addEventListener('click', function () {
+                if (recommend) {
+                    urlParams.delete('recommend');
+                } else {
+                    urlParams.set('recommend', 'true');
+                }
+                window.location.search = urlParams.toString();
+            });
         });
 
-        document.getElementById('endPrice').addEventListener('input', function () {
-            clearTimeout(timeout);
-            timeout = setTimeout(updateURL, redirectTimeout);
-        });
+        document.addEventListener("DOMContentLoaded", function () {
+            const categoryList = document.getElementById('category-list');
+            const startPriceInput = document.getElementById('startPrice');
+            const endPriceInput = document.getElementById('endPrice');
+            const keywordInput = document.getElementById('keyword');
+            const resetButton = document.getElementById('reset-filters');
 
-        document.getElementById('keyword').addEventListener('input', function () {
-            clearTimeout(timeout);
-            timeout = setTimeout(updateURL, redirectTimeout);
+            categoryList.addEventListener('click', function (event) {
+                if (event.target.tagName === 'A') {
+                    const category = event.target.getAttribute('data-category');
+                    updateURL({category});
+                }
+            });
+
+            startPriceInput.addEventListener('input', debounce(updateURL, 1000));
+            endPriceInput.addEventListener('input', debounce(updateURL, 1000));
+            keywordInput.addEventListener('input', debounce(updateURL, 1000));
+
+            resetButton.addEventListener('click', function () {
+                startPriceInput.value = '';
+                endPriceInput.value = '';
+                keywordInput.value = '';
+                updateURL({category: 0, startPrice: '', endPrice: '', keyword: '', recommend: ''});
+            });
+
+            function updateURL(params) {
+                const url = new URL(window.location.href);
+                Object.keys(params).forEach(key => {
+                    if (params[key]) {
+                        url.searchParams.set(key, params[key]);
+                    } else {
+                        url.searchParams.delete(key);
+                    }
+                });
+                window.location.href = url.toString();
+            }
+
+            function debounce(func, wait) {
+                let timeout;
+                return function () {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, arguments), wait);
+                };
+            }
         });
     </script>
 
