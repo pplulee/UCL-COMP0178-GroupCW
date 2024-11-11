@@ -69,13 +69,13 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     exit();
                 }
                 // Seller self cannot bid
-                if ($item['seller_id'] === $_SESSION['user_id']) {
-                    echo json_encode([
-                        'ret' => 0,
-                        'msg' => 'You cannot bid on your own item'
-                    ]);
-                    exit();
-                }
+//                if ($item['seller_id'] === $_SESSION['user_id']) {
+//                    echo json_encode([
+//                        'ret' => 0,
+//                        'msg' => 'You cannot bid on your own item'
+//                    ]);
+//                    exit();
+//                }
                 // Set watch if not already watching
                 $stmt = $conn->prepare("SELECT * FROM watch WHERE buyer_id = :buyer_id AND auction_item_id = :auction_item_id");
                 $stmt->execute(['buyer_id' => $_SESSION['user_id'], 'auction_item_id' => $_POST['item_id']]);
@@ -97,7 +97,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
                 // Notify watchers
                 $stmt = $conn->prepare("SELECT buyer_id FROM watch WHERE auction_item_id = :auction_item_id AND buyer_id != :user_id");
-                $stmt->execute(['auction_item_id' => $_POST['item_id']]);
+                $stmt->execute(['auction_item_id' => $_POST['item_id'], 'user_id' => $_SESSION['user_id']]);
                 $users = $stmt->fetchAll();
                 $auction_url = env('app_url') . "/view_item.php?id=" . $_POST['item_id'];
                 // Fetch item first image
@@ -129,6 +129,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     'ret' => 1,
                     'msg' => 'Bid placed successfully'
                 ]);
+                exit();
             default:
                 http_response_code(400);
                 exit();
