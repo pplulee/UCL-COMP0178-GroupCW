@@ -25,7 +25,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                 }
                 $itemId = $_POST['id'];
                 // TODO: Fetch bid_price, bid_time, status from bids table
-                $stmt = $conn->prepare("");
+                $stmt = $conn->prepare("SELECT bid_price, bid_time, status FROM bids WHERE auction_item_id = ?");
                 $stmt->execute([]);
                 $bids = $stmt->fetchAll();
                 echo json_encode([
@@ -49,7 +49,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         exit();
 }
 // TODO: Fetch items id in bid table
-$stmt = $conn->prepare("");
+$stmt = $conn->prepare("SELECT auction_item_id FROM bids WHERE user_id = ?");
 $stmt->execute([]);
 $items = $stmt->fetchAll();
 ?>
@@ -78,7 +78,7 @@ $items = $stmt->fetchAll();
                             <?php foreach ($items as $itemId): ?>
                                 <?php
                                 // TODO: Fetch item details
-                                $stmt = $conn->prepare("");
+                                $stmt = $conn->prepare("SELECT name, description, transaction_price, end_date FROM AuctionItems WHERE auction_item_id = ?");
                                 $stmt->execute([]);
                                 $item = $stmt->fetch();
                                 // Count watchers
