@@ -8,16 +8,48 @@ if ($_SESSION['logged_in'] === true) {
     exit();
 }
 
+global $conn;
+
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
         include "include/common.php";
         header('Content-Type: application/json');
-        $user = new User();
-        $result = $user->register($_POST);
-        if ($result['ret'] === 1) {
-            header('HX-Redirect: login.php');
+        if (isset($_POST['action'])) {
+            switch ($_POST['action']) {
+                case 'send_code':
+                {
+                    $email = $_POST['email'];
+                    $result = validate(
+                        ['email' => $email],
+                        ['email' => 'required|email'],
+                        ['email:required' => 'Email is required', 'email:email' => 'Invalid email']
+                    );
+                    if ($result['ret'] === 0) {
+                        echo json_encode($result);
+                        exit();
+                    }
+                    $stmt = $conn->prepare("INSERT INTO email_captcha (email, code, type) VALUES (:email, :code, 'register')");
+                    $code = random_int(100000, 999999);
+                    $stmt->execute(['email' => $email, 'code' => $code]);
+                    $result = sendmail($email, "Email Verification Code", "code", ['code' => $code]);
+                    echo json_encode($result);
+                    exit();
+                }
+                case 'register':
+                {
+                    $user = new User();
+                    $result = $user->register($_POST);
+                    if ($result['ret'] === 1) {
+                        header('HX-Redirect: login.php');
+                    }
+                    echo json_encode($result);
+                    exit();
+                }
+                default:
+                    http_response_code(405);
+                    exit();
+            }
         }
-        echo json_encode($result);
         exit();
     case 'GET':
         include_once("header.php");
@@ -44,6 +76,27 @@ switch ($_SERVER['REQUEST_METHOD']) {
                         <input class="form-control" id="email" placeholder="Please enter your email address" required
                                type="email">
                     </div>
+                    <?php if (env('register_email_verify', false)): ?>
+                        <div class="mb-3">
+                            <button class="btn btn-secondary w-100" id="send-code-button" type="button"
+                                    hx-post="register.php"
+                                    hx-trigger="click"
+                                    hx-target="#send-code-button"
+                                    hx-swap="none"
+                                    hx-vals='js:{
+                            email: document.getElementById("email").value,
+                            action: "send_code"}'
+                            >
+                                Send Verification Code
+                            </button>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-key"></i> Verification Code</label>
+                            <input autocomplete="off" class="form-control" id="code"
+                                   placeholder="Please enter the verification code"
+                                   tabindex="2" type="text">
+                        </div>
+                    <?php endif; ?>
                     <div class="mb-2">
                         <label class="form-label"><i class="fa-solid fa-lock"></i> Password</label>
                         <div class="input-group input-group-flat">
@@ -63,7 +116,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     </div>
                     <div class="mb-3">
                         <label class="form-label"><i class="fas fa-map-marker-alt"></i> Address</label>
-                        <textarea class="form-control" id="address" placeholder="Please enter your address" required></textarea>
+                        <textarea class="form-control" id="address" placeholder="Please enter your address"
+                                  required></textarea>
                     </div>
                     <div class="form-footer">
                         <button class="btn btn-primary w-100"
@@ -71,11 +125,15 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                 hx-swap="none"
                                 hx-disabled-elt="button"
                                 hx-vals='js:{
+                                action: "register",
                                 username: document.getElementById("username").value,
                                 email: document.getElementById("email").value,
                                 password: document.getElementById("password").value,
                                 confirm_password: document.getElementById("confirm_password").value,
-                                address: document.getElementById("address").value
+                                address: document.getElementById("address").value,
+                                <?php if (env('register_email_verify', false)): ?>
+                                code: document.getElementById("code").value,
+                                <?php endif; ?>
                             }'>
                             Register
                         </button>
