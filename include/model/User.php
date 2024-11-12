@@ -13,8 +13,8 @@ class User
     public string $email;
     public string $uuid;
     public bool $admin;
-    private string $password;
     public string $address;
+    private string $password;
 
     public function __construct()
     {
@@ -60,6 +60,27 @@ class User
         $this->uuid = Uuid::uuid4()->toString();
         $this->address = htmlspecialchars($data['address']);
         global $conn;
+        if (env('register_email_verify', false)) {
+            // Check email verification code
+            $stmt = $conn->prepare('SELECT * FROM email_captcha WHERE email = :email AND code = :code AND type = "register" AND expire_at > NOW()');
+            $stmt->execute([
+                'email' => $this->email,
+                'code' => $data['code'] ?? ''
+            ]);
+            $emailCaptcha = $stmt->fetch();
+            if (! $emailCaptcha) {
+                return [
+                    'ret' => 0,
+                    'msg' => 'Invalid verification code'
+                ];
+            }
+            // Delete record
+            $stmt = $conn->prepare('DELETE FROM email_captcha WHERE email = :email AND code = :code AND type = "register"');
+            $stmt->execute([
+                'email' => $this->email,
+                'code' => $data['code']
+            ]);
+        }
         // Check if the user already exists
         $stmt = $conn->prepare('SELECT * FROM user WHERE username = :username OR email = :email');
         $stmt->execute([

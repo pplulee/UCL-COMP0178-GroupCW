@@ -36,21 +36,17 @@ switch ($_SERVER['REQUEST_METHOD']) {
                         echo json_encode($result);
                         exit();
                     }
-                    $stmt = $conn->prepare("SELECT id FROM user WHERE email = :email");
-                    $stmt->execute(['email' => $email]);
+                    $stmt = $conn->prepare("SELECT email FROM email_captcha WHERE email = :email AND code = :code AND type = 'reset' AND expire_at > NOW()");
+                    $stmt->execute(['email' => $email, 'code' => $code]);
                     $user = $stmt->fetch();
                     if ($user === false) {
-                        echo json_encode(['ret' => 0, 'msg' => 'User not found']);
-                        exit();
-                    }
-                    $user_id = $cache->get('reset_' . $code);
-                    if ($user_id !== $user['id']) {
                         echo json_encode(['ret' => 0, 'msg' => 'Invalid verification code']);
                         exit();
                     }
-                    $stmt = $conn->prepare("UPDATE user SET password = :password WHERE id = :id");
-                    $stmt->execute(['password' => password_hash($new_password, getPasswordMethod()), 'id' => $user['id']]);
-                    $cache->delete('reset_' . $code);
+                    $stmt = $conn->prepare("UPDATE user SET password = :password WHERE email = :email");
+                    $stmt->execute(['password' => password_hash($new_password, getPasswordMethod()), 'email' => $user['email']]);
+                    $stmt = $conn->prepare("DELETE FROM email_captcha WHERE email = :email AND code = :code AND type = 'reset'");
+                    $stmt->execute(['email' => $email, 'code' => $code]);
                     header('HX-Redirect: login.php');
                     echo json_encode(['ret' => 1, 'msg' => 'Password reset successfully']);
                     exit();
@@ -73,7 +69,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
                         exit();
                     }
                     $token = bin2hex(random_bytes(8));
-                    $cache->set('reset_' . $token, $user['id'], 3600);
+                    $stmt = $conn->prepare("INSERT INTO email_captcha (email, code, type) VALUES (:email, :code, 'reset')");
+                    $stmt->execute(['email' => $email, 'code' => $token]);
                     $result = sendmail($email, 'Reset Password', 'code', ['code' => $token]);
                     echo json_encode($result);
                     exit();
