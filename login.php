@@ -47,7 +47,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                             <span class="form-label-description">
                             <a href="reset.php">Forgot password</a>
                         </span>
-                        </label>
+       .                 </label>
                         <div class="input-group input-group-flat">
                             <input autocomplete="off" class="form-control" id="password"
                                    placeholder="Please enter your password"

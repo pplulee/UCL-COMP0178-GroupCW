@@ -143,7 +143,13 @@ $item = null;
 if (isset($_GET['id'])) {
     $item_id = $_GET['id'];
     // Check item exists
-    $stmt = $conn->prepare("SELECT * FROM AuctionItem WHERE id = :id");
+    $stmt = $conn->prepare("SELECTa.*,
+            calculate_competition_level(a.id) as competition_level,
+            (SELECT COUNT(DISTINCT b.user_id) FROM bid b WHERE b.auction_item_id = a.id) as bidder_count,
+            (SELECT COUNT(*) FROM bid b WHERE b.auction_item_id = a.id) as bid_count
+        FROM AuctionItem a
+        WHERE a.id = :id
+    ");
     $stmt->execute(['id' => $item_id]);
     $item = $stmt->fetch();
     $bids = [];
@@ -255,6 +261,92 @@ if (isset($_GET['id'])) {
                         <label class="form-label h1">Current Price</label>
                         <div class="display-6 fw-bold my-1">£<?= htmlspecialchars($item['current_price']) ?></div>
                     </div>
+
+                    <!-- 在这里添加价格分析面板 -->
+                    <?php if (!$auction_ended): ?>
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h4>Price Analysis</h4>
+
+                                <!-- 添加竞争热度显示 -->
+                                <div class="mb-3">
+                                    <label class="form-label">Competition Level</label>
+                                    <div class="d-flex align-items-center">
+                                        <?php
+                                        $competitionClass = match($item['competition_level']) {
+                                            '高' => 'bg-red text-red-fg',
+                                            '中' => 'bg-orange text-orange-fg',
+                                            '低' => 'bg-green text-green-fg',
+                                            default => 'bg-gray text-gray-fg'
+                                        };
+                                        ?>
+                                        <span class="badge <?= $competitionClass ?> me-2">
+                            <?= htmlspecialchars($item['competition_level']) ?>
+                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- 预测价格区间 -->
+                                <?php
+                                $stmt = $conn->prepare("CALL predict_price_range(?, @min_price, @max_price)");
+                                $stmt->execute([$item_id]);
+                                $prediction = $conn->query("SELECT @min_price as min_price, @max_price as max_price")
+                                    ->fetch(PDO::FETCH_ASSOC);
+                                ?>
+                                <div class="mb-3">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <label class="form-label text-muted">Min. Predicted Price</label>
+                                            <div class="h4">£<?= number_format($prediction['min_price'], 2) ?></div>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label text-muted">Max. Predicted Price</label>
+                                            <div class="h4">£<?= number_format($prediction['max_price'], 2) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 竞价统计 -->
+                                <div class="mb-3">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <label class="form-label text-muted">Total Bidders</label>
+                                            <div class="h4"><?= $item['bidder_count'] ?></div>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label text-muted">Total Bids</label>
+                                            <div class="h4"><?= $item['bid_count'] ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 建议出价 -->
+                                <?php
+                                $suggested_bid = min(
+                                    $prediction['max_price'],
+                                    $item['current_price'] + max($item['bid_increment'], $item['current_price'] * 0.05)
+                                );
+                                ?>
+                                <div class="mb-3">
+                                    <label class="form-label">Suggested Bid</label>
+                                    <div class="h4 text-success">£<?= number_format($suggested_bid, 2) ?></div>
+                                    <button class="btn btn-outline-success w-100"
+                                            onclick="document.querySelector('[name=bid_amount]').value = <?= $suggested_bid ?>">
+                                        Use Suggested Bid
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- 原有的竞拍状态和表单继续保留 -->
+                    <?php
+                    if ($auction_ended) {
+                        // ... 原有的拍卖结束显示代码
+                    } else {
+                        // ... 原有的最低出价等信息显示代码
+                    }
+                    ?>
                     <?php
                     if ($auction_ended) {
                         ?>
