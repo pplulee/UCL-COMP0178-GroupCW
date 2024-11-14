@@ -142,12 +142,28 @@ switch ($_SERVER['REQUEST_METHOD']) {
 $item = null;
 if (isset($_GET['id'])) {
     $item_id = $_GET['id'];
-    // Check item exists
-    $stmt = $conn->prepare("SELECTa.*,
-            calculate_competition_level(a.id) as competition_level,
-            (SELECT COUNT(DISTINCT b.user_id) FROM bid b WHERE b.auction_item_id = a.id) as bidder_count,
-            (SELECT COUNT(*) FROM bid b WHERE b.auction_item_id = a.id) as bid_count
+    // Check item exists with enhanced query
+    $stmt = $conn->prepare("
+        SELECT 
+            a.*,
+            get_smart_price_suggestion(a.id) as suggested_price,
+            mha.unique_bidders,
+            mha.bid_frequency_per_hour,
+            mha.avg_bid_increment,
+            pta.avg_price as trend_avg_price,
+            pta.price_volatility as price_volatility
         FROM AuctionItem a
+        LEFT JOIN market_heat_analysis mha ON a.id = mha.item_id
+        LEFT JOIN (
+            SELECT 
+                item_id,
+                avg_price,
+                price_volatility
+            FROM price_trend_analysis 
+            WHERE time_period = '24h'
+            ORDER BY analysis_time DESC 
+            LIMIT 1
+        ) pta ON a.id = pta.item_id
         WHERE a.id = :id
     ");
     $stmt->execute(['id' => $item_id]);
@@ -262,93 +278,88 @@ if (isset($_GET['id'])) {
                         <div class="display-6 fw-bold my-1">£<?= htmlspecialchars($item['current_price']) ?></div>
                     </div>
 
-                    <!-- 在这里添加价格分析面板 -->
-                    <?php if (!$auction_ended): ?>
-                        <div class="card mb-3">
+                    // 在显示当前价格的div后添加
+                    <div class="mb-3">
+                        <div class="card">
                             <div class="card-body">
-                                <h4>Price Analysis</h4>
+                                <h4 class="card-title">Market Analysis</h4>
 
-                                <!-- 添加竞争热度显示 -->
-                                <div class="mb-3">
-                                    <label class="form-label">Competition Level</label>
-                                    <div class="d-flex align-items-center">
-                                        <?php
-                                        $competitionClass = match($item['competition_level']) {
-                                            '高' => 'bg-red text-red-fg',
-                                            '中' => 'bg-orange text-orange-fg',
-                                            '低' => 'bg-green text-green-fg',
-                                            default => 'bg-gray text-gray-fg'
-                                        };
-                                        ?>
-                                        <span class="badge <?= $competitionClass ?> me-2">
-                            <?= htmlspecialchars($item['competition_level']) ?>
-                        </span>
+                                <!-- 智能建议价格 -->
+                                <div class="price-suggestion mb-3">
+                                    <label class="form-label">Smart Price Suggestion</label>
+                                    <div class="h4 text-success">
+                                        £<?= number_format($item['suggested_price'], 2) ?>
                                     </div>
                                 </div>
 
-                                <!-- 预测价格区间 -->
-                                <?php
-                                $stmt = $conn->prepare("CALL predict_price_range(?, @min_price, @max_price)");
-                                $stmt->execute([$item_id]);
-                                $prediction = $conn->query("SELECT @min_price as min_price, @max_price as max_price")
-                                    ->fetch(PDO::FETCH_ASSOC);
-                                ?>
-                                <div class="mb-3">
-                                    <div class="row">
+                                <!-- 市场活跃度 -->
+                                <div class="market-activity mb-3">
+                                    <label class="form-label">Market Activity</label>
+                                    <div class="row g-2">
                                         <div class="col-6">
-                                            <label class="form-label text-muted">Min. Predicted Price</label>
-                                            <div class="h4">£<?= number_format($prediction['min_price'], 2) ?></div>
+                                            <div class="card bg-light">
+                                                <div class="card-body p-2">
+                                                    <div class="text-muted small">Bids/Hour</div>
+                                                    <div class="h5"><?= number_format($item['bid_frequency_per_hour'], 1) ?></div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-6">
-                                            <label class="form-label text-muted">Max. Predicted Price</label>
-                                            <div class="h4">£<?= number_format($prediction['max_price'], 2) ?></div>
+                                            <div class="card bg-light">
+                                                <div class="card-body p-2">
+                                                    <div class="text-muted small">Unique Bidders</div>
+                                                    <div class="h5"><?= $item['unique_bidders'] ?></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 竞价统计 -->
-                                <div class="mb-3">
-                                    <div class="row">
+                                <!-- 价格趋势 -->
+                                <div class="price-trends mb-3">
+                                    <label class="form-label">Price Trends</label>
+                                    <div class="row g-2">
                                         <div class="col-6">
-                                            <label class="form-label text-muted">Total Bidders</label>
-                                            <div class="h4"><?= $item['bidder_count'] ?></div>
+                                            <div class="card bg-light">
+                                                <div class="card-body p-2">
+                                                    <div class="text-muted small">Avg. Price</div>
+                                                    <div class="h5">£<?= number_format($item['trend_avg_price'], 2) ?></div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-6">
-                                            <label class="form-label text-muted">Total Bids</label>
-                                            <div class="h4"><?= $item['bid_count'] ?></div>
+                                            <div class="card bg-light">
+                                                <div class="card-body p-2">
+                                                    <div class="text-muted small">Avg. Increment</div>
+                                                    <div class="h5">£<?= number_format($item['avg_bid_increment'], 2) ?></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 建议出价 -->
-                                <?php
-                                $suggested_bid = min(
-                                    $prediction['max_price'],
-                                    $item['current_price'] + max($item['bid_increment'], $item['current_price'] * 0.05)
-                                );
-                                ?>
-                                <div class="mb-3">
-                                    <label class="form-label">Suggested Bid</label>
-                                    <div class="h4 text-success">£<?= number_format($suggested_bid, 2) ?></div>
+                                <!-- 如果价格高于趋势，显示警告 -->
+                                <?php if ($item['current_price'] > $item['trend_avg_price'] * 1.2): ?>
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Current price is significantly higher than market average.
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- 竞价建议按钮 -->
+                                <?php if (!$auction_ended): ?>
                                     <button class="btn btn-outline-success w-100"
-                                            onclick="document.querySelector('[name=bid_amount]').value = <?= $suggested_bid ?>">
-                                        Use Suggested Bid
+                                            onclick="document.querySelector('[name=bid_amount]').value = <?= $item['suggested_price'] ?>">
+                                        Use Suggested Price
                                     </button>
-                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
-                    <?php endif; ?>
+                    </div>
 
-                    <!-- 原有的竞拍状态和表单继续保留 -->
                     <?php
                     if ($auction_ended) {
-                        // ... 原有的拍卖结束显示代码
-                    } else {
-                        // ... 原有的最低出价等信息显示代码
-                    }
-                    ?>
-                    <?php
-                    if ($auction_ended) {
+
                         ?>
                         <div class="mb-3 text-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check"
@@ -512,6 +523,27 @@ if (isset($_GET['id'])) {
                 element.textContent = `${ts.days}d ${ts.hours}h ${ts.minutes}m ${ts.seconds}s`.replace(/\b0[dhms]\b/g, '');
             });
         });
+    });
+    // 添加价格分析自动更新
+    if (!<?= json_encode($auction_ended) ?>) {
+        setInterval(function() {
+            fetch(`view_item.php?id=<?= $item_id ?>&action=refresh`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新价格和分析数据
+                        document.querySelector('.current-price').textContent =
+                            '£' + parseFloat(data.current_price).toFixed(2);
+                        document.querySelector('.suggested-price').textContent =
+                            '£' + parseFloat(data.suggested_price).toFixed(2);
+                        document.querySelector('.bid-frequency').textContent =
+                            parseFloat(data.bid_frequency_per_hour).toFixed(1);
+                        document.querySelector('.trend-avg-price').textContent =
+                            '£' + parseFloat(data.trend_avg_price).toFixed(2);
+                    }
+                });
+        }, 30000); // 每30秒更新一次
+    }
     });
 </script>
 <?php include_once("footer.php") ?>
