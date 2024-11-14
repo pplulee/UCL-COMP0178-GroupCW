@@ -83,10 +83,6 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                 <input class="form-control" id="password" type="password"
                                        placeholder="Leave empty to keep the same">
                             </div>
-                            <div class="input-group mb-3">
-                                <span class="input-group-text">Account Role</span>
-                                <input class="form-control" type="text" disabled value="<?php echo $user->role ?>">
-                            </div>
                         </div>
                         <div class="card-footer">
                             <button class="btn btn-primary"
@@ -213,12 +209,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                                                 <p class="card-text">Last
                                                                     used: <?php echo $device['used_at'] ?? 'Never used'; ?></p>
                                                                 <button class="btn btn-danger"
-                                                                    hx-delete="mfa/fido_reg.php"
-                                                                    hx-swap="none"
-                                                                    hx-confirm="Are you sure you want to delete this device?"
-                                                                    hx-vals='{"id": "<?php echo $device['id']; ?>"}'
-                                                            >Delete
-                                                            </button>
+                                                                        hx-delete="mfa/fido_reg.php"
+                                                                        hx-swap="none"
+                                                                        hx-confirm="Are you sure you want to delete this device?"
+                                                                        hx-vals='{"id": "<?php echo $device['id']; ?>"}'
+                                                                >Delete
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
