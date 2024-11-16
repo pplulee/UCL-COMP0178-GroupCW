@@ -9,8 +9,6 @@ if (file_exists($lockFile)) {
     die('Cron job is already running.');
 }
 
-// Create the lock file
-file_put_contents($lockFile, '');
 
 // Register a shutdown function to remove the lock file
 register_shutdown_function(function () use ($lockFile) {
@@ -18,6 +16,19 @@ register_shutdown_function(function () use ($lockFile) {
         unlink($lockFile);
     }
 });
+
+if (file_exists($lockFile)) {
+    $lockTime = (int) file_get_contents($lockFile);
+    if (time() - $lockTime > 600) {
+        // Update the lock file with the new timestamp
+        file_put_contents($lockFile, time());
+    } else {
+        die('Cron job is already running.');
+    }
+} else {
+    // Create the lock file with the current timestamp
+    file_put_contents($lockFile, time());
+}
 
 include_once "include/common.php";
 
@@ -56,8 +67,7 @@ function auction_end_update(): void
     foreach ($auctions as $auction) {
         $stmt = $conn->prepare("UPDATE AuctionItem SET status = 'closed' WHERE id = :id");
         $stmt->execute(['id' => $auction['id']]);
-
-        $stmt = $conn->prepare("SELECT * FROM bid WHERE auction_item_id = :id ORDER BY bid_price DESC LIMIT 1");
+        $stmt = $conn->prepare("SELECT * FROM bid WHERE auction_item_id = :id AND status = 'pending' ORDER BY bid_price DESC LIMIT 1");
         $stmt->execute(['id' => $auction['id']]);
         $bid = $stmt->fetch();
         // Fetch item first image
