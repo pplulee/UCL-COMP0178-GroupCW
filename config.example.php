@@ -1,7 +1,7 @@
 <?php
 $_ENV["debug"] = true;
 
-$_ENV["app_name"] = "Auction";
+$_ENV["app_name"] = "iBay";
 $_ENV["app_url"] = "http://localhost:8000";
 $_ENV["register_email_verify"] = true;
 

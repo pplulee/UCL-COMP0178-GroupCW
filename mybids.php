@@ -24,9 +24,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
                     exit();
                 }
                 $itemId = $_POST['id'];
-                // TODO: Fetch bid_price, bid_time, status from bids table
-                $stmt = $conn->prepare("SELECT bid_price, bid_time, status FROM bids WHERE auction_item_id = ?");
-                $stmt->execute([]);
+                // Fetch bid_price, bid_time, status from bids table
+                $stmt = $conn->prepare("SELECT bid_price, bid_time, status FROM bid WHERE auction_item_id = :auction_item_id ORDER BY bid_time DESC");
+                $stmt->execute([
+                    'auction_item_id' => $itemId
+                ]);
                 $bids = $stmt->fetchAll();
                 echo json_encode([
                     'ret' => 1,
@@ -48,10 +50,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
         http_response_code(405);
         exit();
 }
-// TODO: Fetch items id in bid table
-$stmt = $conn->prepare("SELECT auction_item_id FROM bids WHERE user_id = ?");
-$stmt->execute([]);
-$items = $stmt->fetchAll();
+// Fetch items id in bid table
+$stmt = $conn->prepare("SELECT DISTINCT auction_item_id FROM bid WHERE user_id = :user_id");
+$stmt->execute([
+    'user_id' => $_SESSION['user_id']
+]);
+$items = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
 ?>
     <title><?= env('app_name') ?> - My Bids</title>
     <body>
@@ -77,9 +81,11 @@ $items = $stmt->fetchAll();
                         <?php else: ?>
                             <?php foreach ($items as $itemId): ?>
                                 <?php
-                                // TODO: Fetch item details
-                                $stmt = $conn->prepare("SELECT name, description, transaction_price, end_date FROM AuctionItems WHERE auction_item_id = ?");
-                                $stmt->execute([]);
+                                // Fetch item details
+                                $stmt = $conn->prepare("SELECT * FROM AuctionItem WHERE id = :id");
+                                $stmt->execute([
+                                    'id' => $itemId
+                                ]);
                                 $item = $stmt->fetch();
                                 // Count watchers
                                 $stmt = $conn->prepare("SELECT COUNT(*) FROM watch WHERE auction_item_id = ?");
@@ -132,15 +138,26 @@ $items = $stmt->fetchAll();
                                                         <?php
                                                         $badgeClass = '';
                                                         $badgeText = '';
-                                                        // TODO: check auction status, if closed, check if user won
+                                                        // check auction status, if closed, check if user won
                                                         switch ($item['status']) {
                                                             case 'active':
                                                                 $badgeClass = 'bg-green text-green-fg';
                                                                 $badgeText = 'Active';
                                                                 break;
                                                             case 'closed':
-                                                                $badgeClass = 'bg-red text-red-fg';
-                                                                $badgeText = 'Closed';
+                                                                $stmt = $conn->prepare("SELECT COUNT(*) FROM bid WHERE auction_item_id = :auction_item_id AND user_id = :user_id AND status = 'won'");
+                                                                $stmt->execute([
+                                                                    'auction_item_id' => $item['id'],
+                                                                    'user_id' => $_SESSION['user_id']
+                                                                ]);
+                                                                $won = $stmt->fetchColumn();
+                                                                if ($won) {
+                                                                    $badgeClass = 'bg-green text-green-fg';
+                                                                    $badgeText = 'Won';
+                                                                } else {
+                                                                    $badgeClass = 'bg-red text-red-fg';
+                                                                    $badgeText = 'Lost';
+                                                                }
                                                                 break;
                                                             case 'cancelled':
                                                                 $badgeClass = 'bg-orange text-orange-fg';
@@ -213,7 +230,7 @@ $items = $stmt->fetchAll();
                         bidDetails.empty();
                         if (response.bids && response.bids.length > 0) {
                             response.bids.forEach(function (bid) {
-                                bidDetails.append('<tr><td>' + bid.bid_price + '</td><td>' + bid.bid_time + '</td><td>' + bid.status + '</td></tr>');
+                                bidDetails.append('<tr><td>£' + bid.bid_price + '</td><td>' + bid.bid_time + '</td><td>' + bid.status + '</td></tr>');
                             });
                         } else {
                             bidDetails.append('<tr><td colspan="3">No bids found</td></tr>');

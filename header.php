@@ -71,7 +71,7 @@ if ((! $_SESSION['logged_in']) && (! in_array(php_self(), array("index.php", "lo
                 aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <a class="navbar-brand" href="/">Site Name</a>
+        <a class="navbar-brand" href="/"><?= env('app_name') ?></a>
         <div class="collapse navbar-collapse" id="navbar-menu">
             <ul class="navbar-nav">
                 <li class="nav-item">
