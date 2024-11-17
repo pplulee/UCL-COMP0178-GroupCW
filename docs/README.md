@@ -20,10 +20,10 @@
 - [x] Watch List
 - [x] List of bids
 - [x] List of items posted
-- [ ] My bids
+- [x] My bids
 
 ## Transaction
-- [ ] Basic operations for seller and buyer
+- [x] Basic operations for seller and buyer
 
 ## Email Notification
 - [x] Reset Password

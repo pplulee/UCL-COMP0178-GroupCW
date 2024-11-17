@@ -83,7 +83,7 @@ function auction_end_update(): void
             $stmt->execute(['id' => $auction['seller_id']]);
             $seller = $stmt->fetch();
             // Fetch winning buyer
-            $stmt = $conn->prepare("SELECT username, email FROM user WHERE id = :id");
+            $stmt = $conn->prepare("SELECT username, email, address FROM user WHERE id = :id");
             $stmt->execute(['id' => $bid['user_id']]);
             $buyer = $stmt->fetch();
             // Send email to seller
@@ -117,7 +117,7 @@ function auction_end_update(): void
                 ])
             ]);
             // Create transaction
-            $stmt = $conn->prepare("INSERT INTO transaction (bid_id, buyer_id, seller_id, auction_item_id, price, payment_method, status) VALUES (:bid_id, :buyer_id, :seller_id, :auction_item_id, :price, :payment_method, :status)");
+            $stmt = $conn->prepare("INSERT INTO transaction (bid_id, buyer_id, seller_id, auction_item_id, price, payment_method, status, address) VALUES (:bid_id, :buyer_id, :seller_id, :auction_item_id, :price, :payment_method, :status, :address)");
             $stmt->execute([
                 'bid_id' => $bid['id'],
                 'buyer_id' => $bid['user_id'],
@@ -125,7 +125,8 @@ function auction_end_update(): void
                 'auction_item_id' => $auction['id'],
                 'price' => $bid['bid_price'],
                 'payment_method' => 'Dummy Payment',
-                'status' => 'pending_payment'
+                'status' => 'pending_payment',
+                'address' => $buyer['address']
             ]);
         } else {
             // No bids

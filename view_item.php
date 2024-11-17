@@ -158,12 +158,13 @@ switch ($_SERVER['REQUEST_METHOD']) {
                 ");
                 $stmt->execute(['id' => $item_id]);
                 $data = $stmt->fetch();
+                $current_price = max($data['suggested_price'] ?? 0, $data['current_price'] + $data['bid_increment']);
                 $result = [
                     'ret' => 1,
                     'data' => [
                         'current_price' => $data['current_price'],
-                        'suggested_price' => $data['suggested_price'] == null ? 0 : number_format($data['suggested_price'] + $data['bid_increment'], 2),
-                        'bid_frequency_per_hour' => $data['bid_frequency_per_hour'] ?? 0,
+                        'suggested_price' => $current_price,
+                        'bid_frequency_per_hour' => number_format($data['bid_frequency_per_hour'] ?? 0, 1),
                         'unique_bidders' => $data['unique_bidders'] ?? 0,
                         'trend_avg_price' => $data['trend_avg_price'] == null ? 0 : number_format($data['trend_avg_price'], 1),
                         'price_volatility' => $data['price_volatility'] == null ? 0 : number_format($data['price_volatility'], 2),
