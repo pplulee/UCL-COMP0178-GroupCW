@@ -304,6 +304,10 @@ if (isset($_GET['id'])) {
 
                     <?php
                     if ($auction_ended) {
+                        // Fetch the winning bid
+                        $stmt = $conn->prepare("SELECT b.bid_price, u.username FROM bid b JOIN user u ON b.user_id = u.id WHERE b.auction_item_id = :item_id AND b.status = 'won' LIMIT 1");
+                        $stmt->execute(['item_id' => $item_id]);
+                        $winning_bid = $stmt->fetch();
 
                         ?>
                         <div class="mb-3 text-center">
@@ -313,7 +317,21 @@ if (isset($_GET['id'])) {
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M5 12l5 5l10 -10"/>
                             </svg>
-                            <div class="display-6 fw-bold my-1 text-success">Auction Ended</div>
+                            <div class="display-6 fw-bold my-1 text-success text-center">Auction Ended</div>
+                            <?php if ($winning_bid): ?>
+                                <div class="mt-3 text-center">
+                                    <h4 class="text-primary">Winning Bid</h4>
+                                    <p class="mb-1">
+                                        <strong>Buyer:</strong> <?= htmlspecialchars($winning_bid['username']) ?></p>
+                                    <p class="mb-1"><strong>Bid Amount:</strong>
+                                        £<?= htmlspecialchars($winning_bid['bid_price']) ?></p>
+                                </div>
+                            <?php else: ?>
+                                <div class="mt-3 text-center">
+                                    <h4 class="text-danger">No Sale</h4>
+                                    <p class="mb-1">No bids were placed on this item.</p>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <?php
                     } else {
