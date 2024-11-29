@@ -274,9 +274,9 @@ $items = $stmt->fetchAll();
                 }
             });
 
-            startPriceInput.addEventListener('input', debounce(updateURL, 1000));
-            endPriceInput.addEventListener('input', debounce(updateURL, 1000));
-            keywordInput.addEventListener('input', debounce(updateURL, 1000));
+            startPriceInput.addEventListener('input', debounce(() => updateURL({startPrice: startPriceInput.value}), 1000));
+            endPriceInput.addEventListener('input', debounce(() => updateURL({endPrice: endPriceInput.value}), 1000));
+            keywordInput.addEventListener('input', debounce(() => updateURL({keyword: keywordInput.value}), 1000));
 
             resetButton.addEventListener('click', function () {
                 startPriceInput.value = '';
