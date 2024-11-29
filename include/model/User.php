@@ -125,6 +125,7 @@ class User
         $this->email = $user['email'];
         $this->uuid = $user['uuid'];
         $this->admin = $user['admin'];
+        $this->address = $user['address'];
         return $this;
     }
 
@@ -228,6 +229,7 @@ class User
             'username' => 'required|min:5|max:255',
             'email' => 'required|email',
             'password' => 'min:6',
+            'address' => 'required'
         ], [
             'username:required' => 'Username is required',
             'username:min' => 'Username must be at least 6 characters',
@@ -235,6 +237,7 @@ class User
             'email:required' => 'Email is required',
             'email:email' => 'Email is invalid',
             'password:min' => 'Password must be at least 6 characters',
+            'address:required' => 'Address is required'
         ]);
         if ($result['ret'] === 0) {
             return $result;
@@ -256,16 +259,21 @@ class User
         }
         $this->username = $data['username'];
         $this->email = $data['email'];
-        if (isset($data['password'])) {
-            $this->password = password_hash($data['password'], getPasswordMethod());
-        }
-        $stmt = $conn->prepare('UPDATE user SET username = :username, email = :email, password = :password WHERE id = :id');
+        $stmt = $conn->prepare('UPDATE user SET username = :username, email = :email, address = :address WHERE id = :id');
         $stmt->execute([
             'username' => $this->username,
             'email' => $this->email,
-            'password' => $this->password,
-            'id' => $this->id
+            'id' => $this->id,
+            'address' => $data['address']
         ]);
+        if (! empty($data['password'])) {
+            $this->password = password_hash($data['password'], getPasswordMethod());
+            $stmt = $conn->prepare('UPDATE user SET password = :password WHERE id = :id');
+            $stmt->execute([
+                'password' => $this->password,
+                'id' => $this->id
+            ]);
+        }
         return [
             'ret' => 1,
             'msg' => 'User updated successfully'

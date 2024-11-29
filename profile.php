@@ -83,6 +83,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                 <input class="form-control" id="password" type="password"
                                        placeholder="Leave empty to keep the same">
                             </div>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Address</span>
+                                <textarea class="form-control" id="address"
+                                          rows="5"><?php echo $user->address ?></textarea>
+                            </div>
                         </div>
                         <div class="card-footer">
                             <button class="btn btn-primary"
@@ -92,6 +97,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                                 email: document.getElementById("email").value,
                                 username: document.getElementById("username").value,
                                 password: document.getElementById("password").value,
+                                address: document.getElementById("address").value
                              }'>Update
                             </button>
                         </div>
